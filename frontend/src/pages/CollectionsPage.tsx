@@ -470,25 +470,26 @@ export default function CollectionsPage() {
                           <User className={`w-5 h-5 ${statusConfig.text}`} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <h3 className="font-semibold text-gray-900 truncate">
+                          <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                            <h3 className="font-semibold text-gray-900 truncate max-w-[180px] sm:max-w-none">
                               {schedule.Loan?.Customer?.name || 'Unknown Customer'}
                             </h3>
                             {(schedule.loanCode || schedule.Loan?.loanCode) && (
-                              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-xs font-semibold">
+                              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-xs font-semibold flex-shrink-0">
                                 {schedule.loanCode || schedule.Loan?.loanCode}
                               </span>
                             )}
-                            {schedule.installmentNumber && schedule.totalInstallments && (
-                              <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium">
-                                Day {schedule.installmentNumber}/{schedule.totalInstallments}
-                              </span>
-                            )}
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.text}`}>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${statusConfig.bg} ${statusConfig.text}`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
                               {statusConfig.label}
                             </span>
                           </div>
+                          {schedule.Loan?.Customer?.shopName && (
+                            <p className="text-xs text-gray-600 font-medium flex items-center gap-1 mb-1">
+                              <Building2 className="w-3 h-3 text-gray-400" />
+                              {schedule.Loan.Customer.shopName}
+                            </p>
+                          )}
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
                             {schedule.Loan?.Customer?.code && (
                               <span className="flex items-center gap-1">
@@ -496,16 +497,15 @@ export default function CollectionsPage() {
                                 {schedule.Loan.Customer.code}
                               </span>
                             )}
-                            {schedule.Loan?.Customer?.shopName && (
-                              <span className="flex items-center gap-1">
-                                <Building2 className="w-3 h-3" />
-                                {schedule.Loan.Customer.shopName}
-                              </span>
-                            )}
                             {schedule.Loan?.Customer?.mobileNumber && (
                               <span className="flex items-center gap-1">
                                 <Smartphone className="w-3 h-3" />
                                 {schedule.Loan.Customer.mobileNumber}
+                              </span>
+                            )}
+                            {schedule.installmentNumber && schedule.totalInstallments && (
+                              <span className="flex items-center gap-1 text-gray-400">
+                                Day {schedule.installmentNumber}/{schedule.totalInstallments}
                               </span>
                             )}
                           </div>
