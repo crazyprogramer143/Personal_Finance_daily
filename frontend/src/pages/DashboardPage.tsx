@@ -18,6 +18,9 @@ export default function DashboardPage() {
     { label: 'Loan Products', path: '/loan-products', roles: ['accountant'] },
     { label: 'Accounts', path: '/accounts', roles: ['accountant'] },
     { label: 'Overdue Management', path: '/overdue-management', roles: ['accountant'] },
+    { label: 'Reports', path: '/reports', roles: ['accountant'] },
+    { label: 'Expenses', path: '/expenses', roles: ['accountant'] },
+    { label: 'Daily Closing', path: '/daily-closing', roles: ['accountant'] },
   ];
 
   const filteredMenu = menuItems.filter((item) => item.roles.includes(user?.role || ''));

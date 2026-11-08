@@ -19,7 +19,8 @@
       "Bash(git add *)",
       "Bash(git commit -m 'Phase 2: Lending Features - Foundation *)",
       "Bash(curl -s http://localhost:5173/)",
-      "Bash(git commit -m 'Add Phase 2 completion report with full implementation details *)"
+      "Bash(git commit -m 'Add Phase 2 completion report with full implementation details *)",
+      "Bash(grep -E \"\\(error|^>|tsc$\\)\")"
     ]
   }
 }

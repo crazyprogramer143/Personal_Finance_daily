@@ -50,12 +50,19 @@ const payment_routes_1 = __importDefault(require("./routes/payment.routes"));
 const account_routes_1 = __importDefault(require("./routes/account.routes"));
 // Phase 3 Routes
 const collection_routes_1 = __importDefault(require("./routes/collection.routes"));
+// Phase 4 Routes
+const report_routes_1 = __importDefault(require("./routes/report.routes"));
+const expense_routes_1 = __importDefault(require("./routes/expense.routes"));
+const daily_closing_routes_1 = __importDefault(require("./routes/daily-closing.routes"));
 app.use('/api/customers', customer_routes_1.default);
 app.use('/api/loan-products', loan_product_routes_1.default);
 app.use('/api/loans', loan_routes_1.default);
 app.use('/api/payments', payment_routes_1.default);
 app.use('/api/accounts', account_routes_1.default);
 app.use('/api/collections', collection_routes_1.default);
+app.use('/api/reports', report_routes_1.default);
+app.use('/api/expenses', expense_routes_1.default);
+app.use('/api/daily-closing', daily_closing_routes_1.default);
 // Health check
 app.get('/health', (_req, _res) => {
     _res.json({ status: 'ok', timestamp: new Date().toISOString() });

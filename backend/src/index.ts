@@ -54,12 +54,20 @@ import accountRoutes from './routes/account.routes';
 // Phase 3 Routes
 import collectionRoutes from './routes/collection.routes';
 
+// Phase 4 Routes
+import reportRoutes from './routes/report.routes';
+import expenseRoutes from './routes/expense.routes';
+import dailyClosingRoutes from './routes/daily-closing.routes';
+
 app.use('/api/customers', customerRoutes);
 app.use('/api/loan-products', loanProductRoutes);
 app.use('/api/loans', loanRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/collections', collectionRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/expenses', expenseRoutes);
+app.use('/api/daily-closing', dailyClosingRoutes);
 
 // Health check
 app.get('/health', (_req: Request, _res: Response) => {

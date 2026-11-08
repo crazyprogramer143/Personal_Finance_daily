@@ -262,6 +262,104 @@ class ApiClient {
     );
     return response.data;
   }
+
+  // Report endpoints
+  async getCollectionPerformanceReport(fromDate: Date, toDate: Date) {
+    const params = new URLSearchParams();
+    params.append('fromDate', fromDate.toISOString());
+    params.append('toDate', toDate.toISOString());
+    const response = await this.client.get(`/reports/collection-performance?${params}`);
+    return response.data;
+  }
+
+  async getCollectorComparisonReport(fromDate: Date, toDate: Date) {
+    const params = new URLSearchParams();
+    params.append('fromDate', fromDate.toISOString());
+    params.append('toDate', toDate.toISOString());
+    const response = await this.client.get(`/reports/collector-comparison?${params}`);
+    return response.data;
+  }
+
+  async getCustomerCollectionHistoryReport(customerId: string) {
+    const response = await this.client.get(`/reports/customer-history/${customerId}`);
+    return response.data;
+  }
+
+  async getLoanPortfolioReport() {
+    const response = await this.client.get('/reports/loan-portfolio');
+    return response.data;
+  }
+
+  async getOverdueAnalysisReport() {
+    const response = await this.client.get('/reports/overdue-analysis');
+    return response.data;
+  }
+
+  // Expense endpoints
+  async createExpense(data: any) {
+    const response = await this.client.post('/expenses', data);
+    return response.data;
+  }
+
+  async getCompanyExpenses(fromDate?: Date, toDate?: Date, status?: string) {
+    const params = new URLSearchParams();
+    if (fromDate) params.append('fromDate', fromDate.toISOString());
+    if (toDate) params.append('toDate', toDate.toISOString());
+    if (status) params.append('status', status);
+    const response = await this.client.get(`/expenses?${params}`);
+    return response.data;
+  }
+
+  async approveExpense(expenseId: string) {
+    const response = await this.client.post(`/expenses/${expenseId}/approve`);
+    return response.data;
+  }
+
+  async rejectExpense(expenseId: string) {
+    const response = await this.client.post(`/expenses/${expenseId}/reject`);
+    return response.data;
+  }
+
+  async getExpenseStats(fromDate?: Date, toDate?: Date) {
+    const params = new URLSearchParams();
+    if (fromDate) params.append('fromDate', fromDate.toISOString());
+    if (toDate) params.append('toDate', toDate.toISOString());
+    const response = await this.client.get(`/expenses/stats?${params}`);
+    return response.data;
+  }
+
+  // Daily closing endpoints
+  async createDailyClosing(data: any) {
+    const response = await this.client.post('/daily-closing', data);
+    return response.data;
+  }
+
+  async submitClosing(closingId: string) {
+    const response = await this.client.post(`/daily-closing/${closingId}/submit`);
+    return response.data;
+  }
+
+  async approveClosing(closingId: string) {
+    const response = await this.client.post(`/daily-closing/${closingId}/approve`);
+    return response.data;
+  }
+
+  async rejectClosing(closingId: string) {
+    const response = await this.client.post(`/daily-closing/${closingId}/reject`);
+    return response.data;
+  }
+
+  async getCompanyClosings(limit?: number) {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit.toString());
+    const response = await this.client.get(`/daily-closing?${params}`);
+    return response.data;
+  }
+
+  async getClosingDetails(closingId: string) {
+    const response = await this.client.get(`/daily-closing/${closingId}`);
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();

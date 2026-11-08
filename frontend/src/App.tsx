@@ -10,6 +10,9 @@ import AccountsPage from '@/pages/AccountsPage';
 import LoansPage from '@/pages/LoansPage';
 import CollectionsPage from '@/pages/CollectionsPage';
 import OverdueManagementPage from '@/pages/OverdueManagementPage';
+import ReportsPage from '@/pages/ReportsPage';
+import ExpensesPage from '@/pages/ExpensesPage';
+import DailyClosingPage from '@/pages/DailyClosingPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -83,6 +86,30 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <OverdueManagementPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <ReportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/expenses"
+        element={
+          <ProtectedRoute>
+            <ExpensesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/daily-closing"
+        element={
+          <ProtectedRoute>
+            <DailyClosingPage />
           </ProtectedRoute>
         }
       />
