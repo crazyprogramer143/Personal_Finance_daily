@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Op, fn, col } from 'sequelize';
 import Customer from '../models/Customer';
 import Loan from '../models/Loan';
+import LoanSchedule from '../models/LoanSchedule';
 import User from '../models/User';
 import CustomerCollectorAssignment from '../models/CustomerCollectorAssignment';
 import auditService from '../services/audit.service';
@@ -144,10 +145,18 @@ export class CustomerController {
 
       const loans = await Loan.findAll({
         where: { customerId, companyId },
+        include: [{ model: LoanSchedule }],
         order: [['createdAt', 'DESC']],
       });
 
-      res.json({ ...customer.toJSON(), loans });
+      const loansWithRepaid = loans.map(loan => {
+        const loanJson = loan.toJSON() as any;
+        const schedules = loanJson.LoanSchedules || [];
+        const totalRepaid = schedules.reduce((sum: number, s: any) => sum + Number(s.amountAllocated || 0), 0);
+        return { ...loanJson, totalRepaid };
+      });
+
+      res.json({ ...customer.toJSON(), loans: loansWithRepaid });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

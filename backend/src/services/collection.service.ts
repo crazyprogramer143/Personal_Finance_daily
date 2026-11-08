@@ -125,16 +125,26 @@ export class CollectionService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    let status: 'upcoming' | 'due' | 'partially_paid' | 'paid' | 'overdue' | 'waived' = 'upcoming';
+    if (schedule.status === 'waived' || schedule.status === 'skipped') {
+      return;
+    }
+
+    let status: 'upcoming' | 'due' | 'partially_paid' | 'paid' | 'overdue' | 'waived' | 'skipped' = 'upcoming';
 
     if (Number(schedule.remainingDue) === 0) {
       status = 'paid';
+    } else if (Number(schedule.amountAllocated) > 0 && schedule.dueDate < today) {
+      status = 'overdue';
     } else if (schedule.dueDate < today && Number(schedule.remainingDue) > 0) {
       status = 'overdue';
-    } else if (schedule.dueDate.getTime() === today.getTime()) {
-      status = 'due';
     } else if (Number(schedule.amountAllocated) > 0) {
       status = 'partially_paid';
+    } else {
+      const dueDay = new Date(schedule.dueDate);
+      dueDay.setHours(0, 0, 0, 0);
+      if (dueDay.getTime() === today.getTime()) {
+        status = 'due';
+      }
     }
 
     await schedule.update({ status });
@@ -162,6 +172,58 @@ export class CollectionService {
       });
 
       return schedule;
+    });
+  }
+
+  async skipInstallment(
+    scheduleId: string,
+    reason: string,
+    _approvedBy: string
+  ): Promise<{ skipped: LoanSchedule; newSchedule: LoanSchedule }> {
+    return sequelize.transaction(async (t) => {
+      const schedule = await LoanSchedule.findByPk(scheduleId, { transaction: t });
+      if (!schedule) {
+        throw new Error('Schedule not found');
+      }
+
+      if (schedule.status === 'paid' || schedule.status === 'waived' || schedule.status === 'skipped') {
+        throw new Error(`Cannot skip a ${schedule.status} installment`);
+      }
+
+      await schedule.update({
+        status: 'skipped',
+        skipReason: reason,
+        remainingDue: 0,
+      }, { transaction: t });
+
+      const lastSchedule = await LoanSchedule.findOne({
+        where: { loanId: schedule.loanId, status: { [Op.ne]: 'skipped' } },
+        order: [['dueDate', 'DESC']],
+        transaction: t,
+      });
+
+      const lastDate = lastSchedule ? new Date(lastSchedule.dueDate) : new Date(schedule.dueDate);
+      const newDueDate = new Date(lastDate);
+      newDueDate.setDate(newDueDate.getDate() + 1);
+
+      const newSchedule = await LoanSchedule.create({
+        loanId: schedule.loanId,
+        dueDate: newDueDate,
+        scheduledAmount: Number(schedule.scheduledAmount),
+        amountAllocated: 0,
+        remainingDue: Number(schedule.scheduledAmount),
+        status: 'upcoming',
+      }, { transaction: t });
+
+      const loan = await Loan.findByPk(schedule.loanId, { transaction: t });
+      if (loan) {
+        await loan.update({
+          endDate: newDueDate,
+          durationDays: loan.durationDays + 1,
+        }, { transaction: t });
+      }
+
+      return { skipped: schedule, newSchedule };
     });
   }
 

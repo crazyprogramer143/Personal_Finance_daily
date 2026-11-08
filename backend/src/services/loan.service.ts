@@ -39,10 +39,14 @@ export class LoanService {
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + durationDays);
 
+    const loanCount = await Loan.count({ where: { companyId } });
+    const loanCode = `L${String(loanCount + 1).padStart(3, '0')}`;
+
     const loan = await Loan.create({
       companyId,
       customerId: data.customerId,
       loanProductId: data.loanProductId,
+      loanCode,
       createdBy,
       principalAmount: data.principalAmount,
       heldAmount: data.heldAmount,

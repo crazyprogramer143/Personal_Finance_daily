@@ -10,7 +10,8 @@ interface LoanScheduleAttributes {
   scheduledAmount: number;
   amountAllocated: number;
   remainingDue: number;
-  status: 'upcoming' | 'due' | 'partially_paid' | 'paid' | 'overdue' | 'waived';
+  status: 'upcoming' | 'due' | 'partially_paid' | 'paid' | 'overdue' | 'waived' | 'skipped';
+  skipReason?: string;
   paidAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
@@ -25,7 +26,8 @@ class LoanSchedule extends Model<LoanScheduleAttributes, LoanScheduleCreationAtt
   public scheduledAmount!: number;
   public amountAllocated!: number;
   public remainingDue!: number;
-  public status!: 'upcoming' | 'due' | 'partially_paid' | 'paid' | 'overdue' | 'waived';
+  public status!: 'upcoming' | 'due' | 'partially_paid' | 'paid' | 'overdue' | 'waived' | 'skipped';
+  public skipReason?: string;
   public paidAt?: Date;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -68,9 +70,14 @@ LoanSchedule.init(
       comment: 'Remaining amount due (scheduled - allocated)',
     },
     status: {
-      type: DataTypes.ENUM('upcoming', 'due', 'partially_paid', 'paid', 'overdue', 'waived'),
+      type: DataTypes.ENUM('upcoming', 'due', 'partially_paid', 'paid', 'overdue', 'waived', 'skipped'),
       allowNull: false,
       defaultValue: 'upcoming',
+    },
+    skipReason: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Reason for skipping this installment',
     },
     paidAt: {
       type: DataTypes.DATE,

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { apiClient } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import Layout from '@/components/Layout';
@@ -103,6 +104,7 @@ const statusConfig: Record<string, { color: string; bg: string; icon: any; label
 
 export default function LoansPage() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isAccountant = user?.role === 'accountant';
   const [view, setView] = useState<ViewMode>('list');
   const [loans, setLoans] = useState<Loan[]>([]);
@@ -134,7 +136,19 @@ export default function LoansPage() {
   });
 
   useEffect(() => {
-    loadData();
+    loadData().then(() => {
+      const loanId = searchParams.get('loanId');
+      if (loanId) {
+        setSearchParams({}, { replace: true });
+        apiClient.getLoanDetails(loanId).then(details => {
+          return apiClient.getLoanPayments(loanId).then(payments => {
+            setSelectedLoan(details);
+            setLoanPayments(payments);
+            setView('detail');
+          });
+        }).catch(() => {});
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -545,7 +559,7 @@ export default function LoansPage() {
                               </span>
                             </div>
                             <p className="text-xs text-slate-500 mt-0.5">
-                              {loan.LoanProduct?.name || 'Unknown Product'} &middot; {loan.id.slice(0, 8)}
+                              {loan.loanCode && <span className="font-semibold text-slate-600">{loan.loanCode}</span>}{loan.loanCode && ' · '}{loan.LoanProduct?.name || 'Unknown Product'}
                             </p>
                           </div>
                         </div>
@@ -679,7 +693,7 @@ export default function LoansPage() {
                     })()}
                   </div>
                   <p className="text-sm text-white/60 mt-1">
-                    {selectedLoan.LoanProduct?.name} &middot; ID: {selectedLoan.id.slice(0, 8)}
+                    {selectedLoan.loanCode && <span className="font-semibold">{selectedLoan.loanCode}</span>}{selectedLoan.loanCode && ' · '}{selectedLoan.LoanProduct?.name}
                   </p>
                   {selectedLoan.Customer?.shopName && (
                     <p className="text-sm text-white/50 mt-0.5 flex items-center gap-1">

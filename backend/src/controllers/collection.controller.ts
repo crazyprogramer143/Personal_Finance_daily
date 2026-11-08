@@ -88,6 +88,30 @@ export class CollectionController {
     }
   }
 
+  async skipInstallment(_req: Request, res: Response): Promise<any> {
+    try {
+      const { scheduleId } = _req.params;
+      const { reason } = _req.body;
+      const userId = (_req as any).user.userId;
+      const companyId = (_req as any).user.companyId;
+
+      const result = await collectionService.skipInstallment(scheduleId, reason, userId);
+
+      await auditService.logAction(
+        companyId,
+        userId,
+        'UPDATE',
+        'LoanSchedule',
+        scheduleId,
+        { status: 'skipped', reason }
+      );
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
   async applyGracePeriod(_req: Request, res: Response): Promise<any> {
     try {
       const { scheduleId } = _req.params;

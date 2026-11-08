@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/services/api';
 import Layout from '@/components/Layout';
 import {
@@ -60,10 +61,12 @@ interface Customer {
 
 interface LoanItem {
   id: string;
+  loanCode?: string;
   principalAmount: number;
   heldAmount: number;
   disbursedAmount: number;
   totalScheduledRepayment: number;
+  totalRepaid: number;
   durationDays: number;
   collectionFrequency: string;
   startDate?: string;
@@ -89,6 +92,7 @@ const emptyForm = {
 };
 
 export default function CustomersPage() {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [collectors, setCollectors] = useState<Collector[]>([]);
   const [loading, setLoading] = useState(true);
@@ -512,7 +516,7 @@ export default function CustomersPage() {
           {selectedCustomer.loans && selectedCustomer.loans.length > 0 ? (
             <div className="space-y-3">
               {selectedCustomer.loans.map((loan: LoanItem) => (
-                <div key={loan.id} className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5">
+                <div key={loan.id} className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5 cursor-pointer" onClick={() => navigate(`/loans?loanId=${loan.id}`)}>
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
@@ -527,7 +531,7 @@ export default function CustomersPage() {
                          <Clock className="w-5 h-5" />}
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-800">{formatCurrency(Number(loan.principalAmount))}</p>
+                        <p className="font-semibold text-slate-800">{loan.loanCode && <span className="text-blue-600 mr-1">{loan.loanCode}</span>}{formatCurrency(Number(loan.principalAmount))}</p>
                         <p className="text-xs text-slate-500">{loan.collectionFrequency} &middot; {loan.durationDays} days</p>
                       </div>
                     </div>
@@ -555,8 +559,8 @@ export default function CustomersPage() {
                       <p className="text-sm font-semibold text-slate-700 mt-0.5">{formatCurrency(Number(loan.disbursedAmount))}</p>
                     </div>
                     <div>
-                      <p className="text-[11px] text-slate-400 uppercase tracking-wider font-medium">Total Repay</p>
-                      <p className="text-sm font-semibold text-slate-700 mt-0.5">{formatCurrency(Number(loan.totalScheduledRepayment))}</p>
+                      <p className="text-[11px] text-slate-400 uppercase tracking-wider font-medium">Repaid</p>
+                      <p className="text-sm font-semibold text-emerald-600 mt-0.5">{formatCurrency(Number(loan.totalRepaid || 0))}</p>
                     </div>
                   </div>
 

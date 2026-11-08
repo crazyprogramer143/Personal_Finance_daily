@@ -18,6 +18,7 @@ import {
   User,
   FileText,
   TrendingDown,
+  SkipForward,
 } from 'lucide-react';
 
 interface Account {
@@ -58,7 +59,7 @@ interface OverdueStats {
 }
 
 type TabType = 'overdue' | 'due' | 'all';
-type ModalType = 'payment' | 'waiver' | 'grace' | null;
+type ModalType = 'payment' | 'waiver' | 'grace' | 'skip' | null;
 
 export default function CollectionsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('due');
@@ -80,6 +81,7 @@ export default function CollectionsPage() {
     accountId: '',
   });
   const [waiverReason, setWaiverReason] = useState('');
+  const [skipReason, setSkipReason] = useState('');
   const [graceForm, setGraceForm] = useState({ days: '', reason: '' });
   const [submitting, setSubmitting] = useState(false);
 
@@ -189,6 +191,12 @@ export default function CollectionsPage() {
     setModalType('waiver');
   };
 
+  const openSkipModal = (schedule: Schedule) => {
+    setSelectedSchedule(schedule);
+    setSkipReason('');
+    setModalType('skip');
+  };
+
   const openGraceModal = (schedule: Schedule) => {
     setSelectedSchedule(schedule);
     setGraceForm({ days: '', reason: '' });
@@ -205,7 +213,7 @@ export default function CollectionsPage() {
         amountReceived: Number(paymentForm.amount),
         paymentMethod: paymentForm.method,
         referenceNumber: paymentForm.reference || undefined,
-        paymentDate: new Date().toISOString(),
+        paymentDate: new Date(selectedDate).toISOString(),
         accountId: paymentForm.accountId || undefined,
         allocations: [
           {
@@ -235,6 +243,22 @@ export default function CollectionsPage() {
       loadData();
     } catch (err: any) {
       showToast(err.response?.data?.error || 'Failed to waive installment', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSkip = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSchedule) return;
+    try {
+      setSubmitting(true);
+      await apiClient.skipInstallment(selectedSchedule.id, skipReason);
+      showToast('Installment skipped — extra repayment added at end', 'success');
+      setModalType(null);
+      loadData();
+    } catch (err: any) {
+      showToast(err.response?.data?.error || 'Failed to skip installment', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -576,6 +600,13 @@ export default function CollectionsPage() {
                             </button>
                           </>
                         )}
+                        <button
+                          onClick={() => openSkipModal(schedule)}
+                          className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-amber-200 text-amber-700 rounded-lg text-xs font-medium hover:bg-amber-50 transition-colors"
+                        >
+                          <SkipForward className="w-3.5 h-3.5" />
+                          Skip
+                        </button>
                       </div>
                     )}
                   </div>
@@ -767,6 +798,87 @@ export default function CollectionsPage() {
                     className="flex-1 px-4 py-2.5 bg-purple-500 text-white rounded-xl text-sm font-medium hover:bg-purple-600 transition-colors disabled:opacity-50 shadow-sm"
                   >
                     {submitting ? 'Processing...' : 'Confirm Waiver'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Skip Modal */}
+        {modalType === 'skip' && selectedSchedule && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+              <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                      <SkipForward className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-white">Skip Installment</h2>
+                      <p className="text-amber-100 text-xs">{selectedSchedule.Loan?.Customer?.name}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setModalType(null)} className="text-white/70 hover:text-white">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <form onSubmit={handleSkip} className="p-6 space-y-5">
+                <div className="bg-amber-50 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                    <p className="text-sm font-medium text-amber-700">Skip Info</p>
+                  </div>
+                  <p className="text-xs text-amber-600">
+                    Skipping ₹{Number(selectedSchedule.remainingDue).toLocaleString('en-IN')} installment. This amount will be added as an extra repayment at the end of the loan, extending it by one day.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Reason for Skip *</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {['Shop closed', 'Customer not available', 'Refused to pay', 'Holiday'].map(r => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setSkipReason(r)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                          skipReason === r
+                            ? 'border-amber-400 bg-amber-50 text-amber-700'
+                            : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                        }`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={skipReason}
+                    onChange={(e) => setSkipReason(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 resize-none"
+                    placeholder="Or type a custom reason..."
+                    rows={2}
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setModalType(null)}
+                    className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex-1 px-4 py-2.5 bg-amber-500 text-white rounded-xl text-sm font-medium hover:bg-amber-600 transition-colors disabled:opacity-50 shadow-sm"
+                  >
+                    {submitting ? 'Processing...' : 'Confirm Skip'}
                   </button>
                 </div>
               </form>

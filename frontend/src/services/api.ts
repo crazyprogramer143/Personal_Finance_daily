@@ -322,6 +322,13 @@ class ApiClient {
     return response.data;
   }
 
+  async skipInstallment(scheduleId: string, reason: string) {
+    const response = await this.client.post(`/collections/schedules/${scheduleId}/skip`, {
+      reason,
+    });
+    return response.data;
+  }
+
   async applyGracePeriod(scheduleId: string, graceDays: number, reason: string) {
     const response = await this.client.post(
       `/collections/schedules/${scheduleId}/grace-period`,

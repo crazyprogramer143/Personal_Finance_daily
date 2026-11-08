@@ -81,9 +81,9 @@ export class PaymentService {
 
       const newAllocated = Number(schedule.amountAllocated) + allocation.amountAllocated;
       const newRemaining = Number(schedule.scheduledAmount) - newAllocated;
-      let status: 'upcoming' | 'due' | 'partially_paid' | 'paid' | 'overdue' | 'waived' = 'upcoming';
+      let status: 'upcoming' | 'due' | 'partially_paid' | 'paid' | 'overdue' | 'waived' | 'skipped' = schedule.status;
 
-      if (newRemaining === 0) {
+      if (newRemaining <= 0) {
         status = 'paid';
       } else if (newAllocated > 0) {
         status = 'partially_paid';
@@ -91,8 +91,9 @@ export class PaymentService {
 
       await schedule.update({
         amountAllocated: newAllocated,
-        remainingDue: newRemaining,
+        remainingDue: Math.max(0, newRemaining),
         status,
+        paidAt: status === 'paid' ? new Date() : undefined,
       });
     }
   }
