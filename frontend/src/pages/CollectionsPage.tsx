@@ -37,8 +37,13 @@ interface Schedule {
   amountAllocated: number;
   remainingDue: number;
   status: string;
+  installmentNumber?: number;
+  totalInstallments?: number;
+  loanCode?: string;
+  skipReason?: string;
   Loan?: {
     id: string;
+    loanCode?: string;
     principalAmount: number;
     totalScheduledRepayment: number;
     status: string;
@@ -95,7 +100,7 @@ export default function CollectionsPage() {
       setLoading(true);
       const dueDate = new Date(selectedDate);
       const [overdue, schedules, accountsData] = await Promise.all([
-        apiClient.getOverdueStats(),
+        apiClient.getOverdueStats(dueDate),
         apiClient.getDueSchedules(dueDate),
         apiClient.getCompanyAccounts(),
       ]);
@@ -137,7 +142,9 @@ export default function CollectionsPage() {
           s.Loan?.Customer?.name?.toLowerCase().includes(q) ||
           s.Loan?.Customer?.code?.toLowerCase().includes(q) ||
           s.Loan?.Customer?.shopName?.toLowerCase().includes(q) ||
-          s.Loan?.Customer?.mobileNumber?.includes(q)
+          s.Loan?.Customer?.mobileNumber?.includes(q) ||
+          s.loanCode?.toLowerCase().includes(q) ||
+          s.Loan?.loanCode?.toLowerCase().includes(q)
       );
     }
 
@@ -169,6 +176,8 @@ export default function CollectionsPage() {
         return { label: 'Paid', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500' };
       case 'waived':
         return { label: 'Waived', bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', dot: 'bg-purple-500' };
+      case 'skipped':
+        return { label: 'Skipped', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500' };
       default:
         return { label: status, bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200', dot: 'bg-gray-400' };
     }
@@ -361,13 +370,13 @@ export default function CollectionsPage() {
               <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
                 <Clock className="w-5 h-5 text-amber-500" />
               </div>
-              <span className="text-sm font-medium text-gray-500">Due Today</span>
+              <span className="text-sm font-medium text-gray-500">{isToday ? 'Due Today' : `Due ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`}</span>
             </div>
             <p className="text-2xl font-bold text-gray-900">
               ₹{totalDueAmount.toLocaleString('en-IN')}
             </p>
             <p className="text-xs text-amber-500 mt-1">
-              {dueSchedules.filter((s) => s.status === 'due').length} installments due
+              {dueSchedules.length} installments due
             </p>
           </div>
 
@@ -489,6 +498,16 @@ export default function CollectionsPage() {
                             <h3 className="font-semibold text-gray-900 truncate">
                               {schedule.Loan?.Customer?.name || 'Unknown Customer'}
                             </h3>
+                            {(schedule.loanCode || schedule.Loan?.loanCode) && (
+                              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-xs font-semibold">
+                                {schedule.loanCode || schedule.Loan?.loanCode}
+                              </span>
+                            )}
+                            {schedule.installmentNumber && schedule.totalInstallments && (
+                              <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium">
+                                Day {schedule.installmentNumber}/{schedule.totalInstallments}
+                              </span>
+                            )}
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.bg} ${statusConfig.text}`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
                               {statusConfig.label}

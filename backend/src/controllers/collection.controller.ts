@@ -139,7 +139,8 @@ export class CollectionController {
   async getOverdueStats(_req: Request, res: Response): Promise<any> {
     try {
       const companyId = (_req as any).user.companyId;
-      const stats = await collectionService.getOverdueStats(companyId);
+      const date = _req.query.date ? new Date(_req.query.date as string) : undefined;
+      const stats = await collectionService.getOverdueStats(companyId, date);
       res.json(stats);
     } catch (error: any) {
       res.status(400).json({ error: error.message });

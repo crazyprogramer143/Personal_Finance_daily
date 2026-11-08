@@ -50,7 +50,7 @@ export class PaymentService {
         transactionDate: data.paymentDate,
         type: 'credit',
         amount: data.amountReceived,
-        description: `Loan repayment from ${(loan as any).Customer?.name || 'Unknown'}`,
+        description: `Loan repayment${loan.loanCode ? ` (${loan.loanCode})` : ''} from ${(loan as any).Customer?.name || 'Unknown'}`,
         referenceType: 'payment',
         referenceId: payment.id,
       });

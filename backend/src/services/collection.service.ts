@@ -32,7 +32,33 @@ export class CollectionService {
       ],
     });
 
-    return schedules;
+    const loanIds = [...new Set(schedules.map(s => s.loanId))];
+    const allSchedules = loanIds.length > 0 ? await LoanSchedule.findAll({
+      where: { loanId: { [Op.in]: loanIds } },
+      order: [['dueDate', 'ASC']],
+      attributes: ['id', 'loanId'],
+    }) : [];
+
+    const installmentMap: Record<string, number> = {};
+    const loanScheduleCounters: Record<string, number> = {};
+    for (const s of allSchedules) {
+      if (!loanScheduleCounters[s.loanId]) loanScheduleCounters[s.loanId] = 0;
+      loanScheduleCounters[s.loanId]++;
+      installmentMap[s.id] = loanScheduleCounters[s.loanId];
+    }
+
+    const totalScheduleMap: Record<string, number> = {};
+    for (const lid of loanIds) {
+      totalScheduleMap[lid] = loanScheduleCounters[lid] || 0;
+    }
+
+    return schedules.map(s => {
+      const json = s.toJSON() as any;
+      json.installmentNumber = installmentMap[s.id] || 0;
+      json.totalInstallments = totalScheduleMap[s.loanId] || 0;
+      json.loanCode = json.Loan?.loanCode;
+      return json;
+    });
   }
 
   async getCustomerDueLoans(customerId: string): Promise<any[]> {
@@ -190,6 +216,8 @@ export class CollectionService {
         throw new Error(`Cannot skip a ${schedule.status} installment`);
       }
 
+      const skipAmount = Number(schedule.remainingDue);
+
       await schedule.update({
         status: 'skipped',
         skipReason: reason,
@@ -209,9 +237,9 @@ export class CollectionService {
       const newSchedule = await LoanSchedule.create({
         loanId: schedule.loanId,
         dueDate: newDueDate,
-        scheduledAmount: Number(schedule.scheduledAmount),
+        scheduledAmount: skipAmount,
         amountAllocated: 0,
-        remainingDue: Number(schedule.scheduledAmount),
+        remainingDue: skipAmount,
         status: 'upcoming',
       }, { transaction: t });
 
@@ -245,10 +273,15 @@ export class CollectionService {
     return schedule;
   }
 
-  async getOverdueStats(companyId: string): Promise<any> {
+  async getOverdueStats(companyId: string, date?: Date): Promise<any> {
+    const asOfDate = date || new Date();
+    asOfDate.setHours(0, 0, 0, 0);
+
     const schedules = await LoanSchedule.findAll({
       where: {
-        status: { [Op.in]: ['overdue', 'partially_paid'] },
+        dueDate: { [Op.lt]: asOfDate },
+        remainingDue: { [Op.gt]: 0 },
+        status: { [Op.notIn]: ['paid', 'waived', 'skipped'] },
       },
       include: [
         {
@@ -262,10 +295,38 @@ export class CollectionService {
     const totalOverdue = schedules.reduce((sum, s) => sum + Number(s.remainingDue), 0);
     const overdueCount = schedules.length;
 
+    const loanIds = [...new Set(schedules.map(s => s.loanId))];
+    const allSchedules = loanIds.length > 0 ? await LoanSchedule.findAll({
+      where: { loanId: { [Op.in]: loanIds } },
+      order: [['dueDate', 'ASC']],
+      attributes: ['id', 'loanId'],
+    }) : [];
+
+    const installmentMap: Record<string, number> = {};
+    const loanScheduleCounters: Record<string, number> = {};
+    for (const s of allSchedules) {
+      if (!loanScheduleCounters[s.loanId]) loanScheduleCounters[s.loanId] = 0;
+      loanScheduleCounters[s.loanId]++;
+      installmentMap[s.id] = loanScheduleCounters[s.loanId];
+    }
+
+    const totalScheduleMap: Record<string, number> = {};
+    for (const lid of loanIds) {
+      totalScheduleMap[lid] = loanScheduleCounters[lid] || 0;
+    }
+
+    const enriched = schedules.map(s => {
+      const json = s.toJSON() as any;
+      json.installmentNumber = installmentMap[s.id] || 0;
+      json.totalInstallments = totalScheduleMap[s.loanId] || 0;
+      json.loanCode = json.Loan?.loanCode;
+      return json;
+    });
+
     return {
       totalOverdueAmount: totalOverdue,
       overdueInstallmentCount: overdueCount,
-      overdueSchedules: schedules,
+      overdueSchedules: enriched,
     };
   }
 

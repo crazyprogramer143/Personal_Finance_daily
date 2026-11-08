@@ -305,8 +305,10 @@ class ApiClient {
     return response.data;
   }
 
-  async getOverdueStats() {
-    const response = await this.client.get('/collections/overdue-stats');
+  async getOverdueStats(date?: Date) {
+    const params: any = {};
+    if (date) params.date = date.toISOString().split('T')[0];
+    const response = await this.client.get('/collections/overdue-stats', { params });
     return response.data;
   }
 
