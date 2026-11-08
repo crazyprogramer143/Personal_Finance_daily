@@ -222,8 +222,12 @@ export default function CustomersPage() {
       }
       setShowModal(false);
       setFormData(emptyForm);
+      const editedId = editingCustomer?.id;
       setEditingCustomer(null);
       loadCustomers();
+      if (selectedCustomer && editedId) {
+        await refreshSelectedCustomer(editedId);
+      }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Operation failed');
     } finally {
@@ -293,15 +297,28 @@ export default function CustomersPage() {
     }
   };
 
+  const refreshSelectedCustomer = async (customerId: string) => {
+    const allCustomers = await apiClient.getCustomers();
+    const updated = allCustomers.find((c: Customer) => c.id === customerId);
+    if (updated && selectedCustomer) {
+      const detail = await apiClient.getCustomerDetails(customerId);
+      setSelectedCustomer({ ...detail, collectors: updated.collectors });
+    }
+  };
+
   const handleAssignCollector = async () => {
     if (!assignTarget || !selectedCollectorId) return;
     setAssigning(true);
     try {
       await apiClient.assignCollector(assignTarget.id, selectedCollectorId);
       setSuccess('Collector assigned successfully');
+      const targetId = assignTarget.id;
       setAssignTarget(null);
       setSelectedCollectorId('');
       loadCustomers();
+      if (selectedCustomer) {
+        await refreshSelectedCustomer(targetId);
+      }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to assign collector');
     } finally {
@@ -314,6 +331,9 @@ export default function CustomersPage() {
       await apiClient.unassignCollector(customerId, collectorId);
       setSuccess('Collector unassigned');
       loadCustomers();
+      if (selectedCustomer) {
+        await refreshSelectedCustomer(customerId);
+      }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to unassign collector');
     }
@@ -404,23 +424,39 @@ export default function CustomersPage() {
                   {selectedCustomer.collectors && selectedCustomer.collectors.length > 0 && (
                     <div className="mt-3 flex items-center gap-2 flex-wrap">
                       {selectedCustomer.collectors.map(col => (
-                        <div key={col.collectorId} className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-500/20 rounded-lg">
+                        <div key={col.collectorId} className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-500/20 rounded-lg group">
                           <Shield className="w-3.5 h-3.5 text-violet-300" />
                           <span className="text-xs font-medium text-violet-300">
                             {col.collectorName}
                           </span>
+                          <button
+                            onClick={() => handleUnassignCollector(selectedCustomer.id, col.collectorId)}
+                            className="ml-1 text-violet-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                            title="Unassign collector"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={() => openEdit(selectedCustomer)}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-colors"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  Edit
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setAssignTarget(selectedCustomer)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-colors"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    Assign Collector
+                  </button>
+                  <button
+                    onClick={() => openEdit(selectedCustomer)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    Edit
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -518,6 +554,170 @@ export default function CustomersPage() {
             </div>
           )}
         </div>
+
+        {/* Toast notifications in detail view */}
+        {success && (
+          <div className="fixed top-20 right-6 z-[60] animate-slide-in">
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl shadow-lg flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+              <span className="text-sm font-medium">{success}</span>
+            </div>
+          </div>
+        )}
+        {error && (
+          <div className="fixed top-20 right-6 z-[60] animate-slide-in">
+            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl shadow-lg flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+              <span className="text-sm font-medium">{error}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Customer Modal (detail view) */}
+        {showModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <Edit3 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-slate-800">Edit Customer</h2>
+                    <p className="text-xs text-slate-500">Update customer information</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowModal(false)} className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Customer Code <span className="text-red-400">*</span></label>
+                    <input type="text" name="code" value={formData.code} onChange={handleChange} placeholder="e.g. C001" disabled={!!editingCustomer}
+                      className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed placeholder:text-slate-400" required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Full Name <span className="text-red-400">*</span></label>
+                    <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Customer name"
+                      className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all placeholder:text-slate-400" required />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Shop Name</label>
+                    <input type="text" name="shopName" value={formData.shopName} onChange={handleChange} placeholder="Shop or business name"
+                      className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all placeholder:text-slate-400" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Business Type</label>
+                    <input type="text" name="businessType" value={formData.businessType} onChange={handleChange} placeholder="e.g. Grocery, Textiles"
+                      className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all placeholder:text-slate-400" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Mobile Number <span className="text-red-400">*</span></label>
+                    <input type="tel" name="mobileNumber" value={formData.mobileNumber} onChange={handleChange} placeholder="+91 XXXXX XXXXX"
+                      className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all placeholder:text-slate-400" required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">Language</label>
+                    <select name="language" value={formData.language} onChange={handleChange}
+                      className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all">
+                      <option value="en">English</option>
+                      <option value="ta">Tamil</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Address</label>
+                  <textarea name="address" value={formData.address} onChange={handleChange} rows={3} placeholder="Shop or business address"
+                    className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all resize-none placeholder:text-slate-400" />
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <button type="button" onClick={() => setShowModal(false)}
+                    className="px-5 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Cancel</button>
+                  <button type="submit" disabled={submitting}
+                    className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-colors disabled:opacity-60">
+                    {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Update Customer
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Assign Collector Modal (detail view) */}
+        {assignTarget && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setAssignTarget(null)} />
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600">
+                    <UserCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-slate-800">Assign Collector</h2>
+                    <p className="text-xs text-slate-500">for {assignTarget.name} ({assignTarget.code})</p>
+                  </div>
+                </div>
+                <button onClick={() => setAssignTarget(null)} className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-6">
+                {collectors.length === 0 ? (
+                  <div className="text-center py-6">
+                    <p className="text-sm text-slate-500">No collectors available</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2 mb-5">
+                      {collectors.map((col) => (
+                        <button
+                          key={col.id}
+                          onClick={() => setSelectedCollectorId(col.id)}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                            selectedCollectorId === col.id
+                              ? 'border-violet-400 bg-violet-50 ring-2 ring-violet-200'
+                              : 'border-slate-200 hover:border-violet-300 hover:bg-violet-50/50'
+                          }`}
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                            <span className="text-white text-xs font-bold">{col.username.slice(0, 2).toUpperCase()}</span>
+                          </div>
+                          <div className="text-left flex-1">
+                            <p className="text-sm font-semibold text-slate-800">{col.username}</p>
+                            <p className="text-[11px] text-slate-400">{col.customerCount} customers</p>
+                          </div>
+                          {selectedCollectorId === col.id && (
+                            <CheckCircle2 className="w-5 h-5 text-violet-500 flex-shrink-0" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex justify-end gap-3">
+                      <button onClick={() => setAssignTarget(null)}
+                        className="px-5 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+                        Cancel
+                      </button>
+                      <button onClick={handleAssignCollector} disabled={!selectedCollectorId || assigning}
+                        className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-xl shadow-sm transition-colors disabled:opacity-60">
+                        {assigning && <Loader2 className="w-4 h-4 animate-spin" />}
+                        Assign
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </Layout>
     );
   }
