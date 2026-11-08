@@ -120,7 +120,8 @@ export default function CustomersPage() {
 
   // Assign collector modal
   const [assignTarget, setAssignTarget] = useState<Customer | null>(null);
-  const [selectedCollectorId, setSelectedCollectorId] = useState('');
+  const [selectedCollectorIds, setSelectedCollectorIds] = useState<string[]>([]);
+  const [originalCollectorIds, setOriginalCollectorIds] = useState<string[]>([]);
   const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
@@ -306,21 +307,46 @@ export default function CustomersPage() {
     }
   };
 
-  const handleAssignCollector = async () => {
-    if (!assignTarget || !selectedCollectorId) return;
+  const openAssignModal = (customer: Customer) => {
+    const currentIds = (customer.collectors || []).map(c => c.collectorId);
+    setOriginalCollectorIds(currentIds);
+    setSelectedCollectorIds([...currentIds]);
+    setAssignTarget(customer);
+  };
+
+  const toggleCollectorSelection = (collectorId: string) => {
+    setSelectedCollectorIds(prev =>
+      prev.includes(collectorId)
+        ? prev.filter(id => id !== collectorId)
+        : [...prev, collectorId]
+    );
+  };
+
+  const handleSaveCollectorAssignments = async () => {
+    if (!assignTarget) return;
     setAssigning(true);
     try {
-      await apiClient.assignCollector(assignTarget.id, selectedCollectorId);
-      setSuccess('Collector assigned successfully');
+      const toAdd = selectedCollectorIds.filter(id => !originalCollectorIds.includes(id));
+      const toRemove = originalCollectorIds.filter(id => !selectedCollectorIds.includes(id));
+
+      for (const collectorId of toAdd) {
+        await apiClient.assignCollector(assignTarget.id, collectorId);
+      }
+      for (const collectorId of toRemove) {
+        await apiClient.unassignCollector(assignTarget.id, collectorId);
+      }
+
+      if (toAdd.length > 0 || toRemove.length > 0) {
+        setSuccess(`Collector assignments updated`);
+      }
       const targetId = assignTarget.id;
       setAssignTarget(null);
-      setSelectedCollectorId('');
       loadCustomers();
       if (selectedCustomer) {
         await refreshSelectedCustomer(targetId);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to assign collector');
+      setError(err.response?.data?.error || 'Failed to update collector assignments');
     } finally {
       setAssigning(false);
     }
@@ -443,7 +469,7 @@ export default function CustomersPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setAssignTarget(selectedCustomer)}
+                    onClick={() => openAssignModal(selectedCustomer)}
                     className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-colors"
                   >
                     <UserPlus className="w-3.5 h-3.5" />
@@ -662,7 +688,7 @@ export default function CustomersPage() {
                     <UserCheck className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-slate-800">Assign Collector</h2>
+                    <h2 className="text-lg font-semibold text-slate-800">Assign Collectors</h2>
                     <p className="text-xs text-slate-500">for {assignTarget.name} ({assignTarget.code})</p>
                   </div>
                 </div>
@@ -677,39 +703,45 @@ export default function CustomersPage() {
                   </div>
                 ) : (
                   <>
+                    <p className="text-xs text-slate-500 mb-3">Select collectors to assign. Deselecting removes the assignment.</p>
                     <div className="space-y-2 mb-5">
-                      {collectors.map((col) => (
-                        <button
-                          key={col.id}
-                          onClick={() => setSelectedCollectorId(col.id)}
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                            selectedCollectorId === col.id
-                              ? 'border-violet-400 bg-violet-50 ring-2 ring-violet-200'
-                              : 'border-slate-200 hover:border-violet-300 hover:bg-violet-50/50'
-                          }`}
-                        >
-                          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                            <span className="text-white text-xs font-bold">{col.username.slice(0, 2).toUpperCase()}</span>
-                          </div>
-                          <div className="text-left flex-1">
-                            <p className="text-sm font-semibold text-slate-800">{col.username}</p>
-                            <p className="text-[11px] text-slate-400">{col.customerCount} customers</p>
-                          </div>
-                          {selectedCollectorId === col.id && (
-                            <CheckCircle2 className="w-5 h-5 text-violet-500 flex-shrink-0" />
-                          )}
-                        </button>
-                      ))}
+                      {collectors.map((col) => {
+                        const isSelected = selectedCollectorIds.includes(col.id);
+                        return (
+                          <button
+                            key={col.id}
+                            onClick={() => toggleCollectorSelection(col.id)}
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                              isSelected
+                                ? 'border-violet-400 bg-violet-50 ring-2 ring-violet-200'
+                                : 'border-slate-200 hover:border-violet-300 hover:bg-violet-50/50'
+                            }`}
+                          >
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                              isSelected ? 'bg-violet-600 border-violet-600' : 'border-slate-300'
+                            }`}>
+                              {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                            </div>
+                            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                              <span className="text-white text-xs font-bold">{col.username.slice(0, 2).toUpperCase()}</span>
+                            </div>
+                            <div className="text-left flex-1">
+                              <p className="text-sm font-semibold text-slate-800">{col.username}</p>
+                              <p className="text-[11px] text-slate-400">{col.customerCount} customers</p>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
                     <div className="flex justify-end gap-3">
                       <button onClick={() => setAssignTarget(null)}
                         className="px-5 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
                         Cancel
                       </button>
-                      <button onClick={handleAssignCollector} disabled={!selectedCollectorId || assigning}
+                      <button onClick={handleSaveCollectorAssignments} disabled={assigning}
                         className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-xl shadow-sm transition-colors disabled:opacity-60">
                         {assigning && <Loader2 className="w-4 h-4 animate-spin" />}
-                        Assign
+                        Save
                       </button>
                     </div>
                   </>
@@ -978,7 +1010,7 @@ export default function CustomersPage() {
                           </div>
                         ))}
                         <button
-                          onClick={(e) => { e.stopPropagation(); setAssignTarget(customer); }}
+                          onClick={(e) => { e.stopPropagation(); openAssignModal(customer); }}
                           className="p-1 rounded-lg text-violet-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
                           title="Add Collector"
                         >
@@ -987,7 +1019,7 @@ export default function CustomersPage() {
                       </>
                     ) : (
                       <button
-                        onClick={(e) => { e.stopPropagation(); setAssignTarget(customer); }}
+                        onClick={(e) => { e.stopPropagation(); openAssignModal(customer); }}
                         className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-violet-50 rounded-lg text-xs text-slate-400 hover:text-violet-600 transition-colors"
                         title="Assign Collector"
                       >
@@ -1066,7 +1098,7 @@ export default function CustomersPage() {
                         </div>
                       ))}
                       <button
-                        onClick={() => setAssignTarget(customer)}
+                        onClick={() => openAssignModal(customer)}
                         className="p-1 rounded-md text-violet-400 hover:text-violet-600"
                         title="Add Collector"
                       >
@@ -1075,7 +1107,7 @@ export default function CustomersPage() {
                     </>
                   ) : (
                     <button
-                      onClick={() => setAssignTarget(customer)}
+                      onClick={() => openAssignModal(customer)}
                       className="flex items-center gap-1 px-2 py-1 bg-slate-50 rounded-md text-[10px] text-slate-400"
                     >
                       <UserPlus className="w-3 h-3" /> Assign
@@ -1306,7 +1338,7 @@ export default function CustomersPage() {
                   <UserCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-800">Assign Collector</h2>
+                  <h2 className="text-lg font-semibold text-slate-800">Assign Collectors</h2>
                   <p className="text-xs text-slate-500">for {assignTarget.name} ({assignTarget.code})</p>
                 </div>
               </div>
@@ -1327,39 +1359,45 @@ export default function CustomersPage() {
                 </div>
               ) : (
                 <>
+                  <p className="text-xs text-slate-500 mb-3">Select collectors to assign. Deselecting removes the assignment.</p>
                   <div className="space-y-2 mb-5">
-                    {collectors.map((col) => (
-                      <button
-                        key={col.id}
-                        onClick={() => setSelectedCollectorId(col.id)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                          selectedCollectorId === col.id
-                            ? 'border-violet-400 bg-violet-50 ring-2 ring-violet-200'
-                            : 'border-slate-200 hover:border-violet-300 hover:bg-violet-50/50'
-                        }`}
-                      >
-                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                          <span className="text-white text-xs font-bold">{col.username.slice(0, 2).toUpperCase()}</span>
-                        </div>
-                        <div className="text-left flex-1">
-                          <p className="text-sm font-semibold text-slate-800">{col.username}</p>
-                          <p className="text-[11px] text-slate-400">{col.customerCount} customers</p>
-                        </div>
-                        {selectedCollectorId === col.id && (
-                          <CheckCircle2 className="w-5 h-5 text-violet-500 flex-shrink-0" />
-                        )}
-                      </button>
-                    ))}
+                    {collectors.map((col) => {
+                      const isSelected = selectedCollectorIds.includes(col.id);
+                      return (
+                        <button
+                          key={col.id}
+                          onClick={() => toggleCollectorSelection(col.id)}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                            isSelected
+                              ? 'border-violet-400 bg-violet-50 ring-2 ring-violet-200'
+                              : 'border-slate-200 hover:border-violet-300 hover:bg-violet-50/50'
+                          }`}
+                        >
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                            isSelected ? 'bg-violet-600 border-violet-600' : 'border-slate-300'
+                          }`}>
+                            {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                          </div>
+                          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                            <span className="text-white text-xs font-bold">{col.username.slice(0, 2).toUpperCase()}</span>
+                          </div>
+                          <div className="text-left flex-1">
+                            <p className="text-sm font-semibold text-slate-800">{col.username}</p>
+                            <p className="text-[11px] text-slate-400">{col.customerCount} customers</p>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                   <div className="flex justify-end gap-3">
                     <button onClick={() => setAssignTarget(null)}
                       className="px-5 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
                       Cancel
                     </button>
-                    <button onClick={handleAssignCollector} disabled={!selectedCollectorId || assigning}
+                    <button onClick={handleSaveCollectorAssignments} disabled={assigning}
                       className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-xl shadow-sm transition-colors disabled:opacity-60">
                       {assigning && <Loader2 className="w-4 h-4 animate-spin" />}
-                      Assign
+                      Save
                     </button>
                   </div>
                 </>

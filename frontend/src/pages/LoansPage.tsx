@@ -118,6 +118,7 @@ export default function LoansPage() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showDisburseModal, setShowDisburseModal] = useState<string | null>(null);
   const [disburseForm, setDisburseForm] = useState({ accountId: '', method: 'cash' as string });
+  const [loanPayments, setLoanPayments] = useState<any[]>([]);
   const [collectors, setCollectors] = useState<Collector[]>([]);
   const [filterCustomerId, setFilterCustomerId] = useState('');
   const [filterCollectorId, setFilterCollectorId] = useState('');
@@ -326,8 +327,12 @@ export default function LoansPage() {
   const openDetail = async (loan: Loan) => {
     try {
       setLoading(true);
-      const details = await apiClient.getLoanDetails(loan.id);
+      const [details, payments] = await Promise.all([
+        apiClient.getLoanDetails(loan.id),
+        apiClient.getLoanPayments(loan.id),
+      ]);
       setSelectedLoan(details);
+      setLoanPayments(payments);
       setView('detail');
     } catch {
       showToast('Failed to load loan details', 'error');
@@ -811,6 +816,60 @@ export default function LoansPage() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Collections / Payments */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-5">
+            <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
+              <Banknote className="w-4 h-4 text-emerald-500" />
+              Collections
+              {loanPayments.length > 0 && (
+                <span className="ml-auto text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                  {loanPayments.filter((p: any) => p.status === 'completed').length} received
+                </span>
+              )}
+            </h3>
+            {loanPayments.length > 0 ? (
+              <div className="space-y-2 max-h-72 overflow-y-auto scrollbar-thin">
+                {loanPayments.map((payment: any, idx: number) => (
+                  <div key={payment.id || idx} className="flex items-center justify-between text-sm py-2.5 px-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                        payment.status === 'completed' ? 'bg-emerald-100 text-emerald-600' :
+                        payment.status === 'reversed' ? 'bg-red-100 text-red-600' :
+                        'bg-slate-100 text-slate-500'
+                      }`}>
+                        <Banknote className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-800">{formatCurrency(payment.amountReceived)}</p>
+                        <p className="text-[11px] text-slate-400">
+                          {formatDate(payment.paymentDate)} &middot; {payment.paymentMethod}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                      payment.status === 'completed' ? 'bg-emerald-50 text-emerald-700' :
+                      payment.status === 'reversed' ? 'bg-red-50 text-red-700' :
+                      'bg-slate-100 text-slate-600'
+                    }`}>
+                      {payment.status}
+                    </span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100 mt-2">
+                  <span className="text-xs font-medium text-slate-500">Total Collected</span>
+                  <span className="text-sm font-bold text-emerald-600">
+                    {formatCurrency(loanPayments.filter((p: any) => p.status === 'completed').reduce((sum: number, p: any) => sum + Number(p.amountReceived), 0))}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Banknote className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+                <p className="text-sm text-slate-500">No collections yet</p>
+              </div>
+            )}
           </div>
         </div>
       )}
