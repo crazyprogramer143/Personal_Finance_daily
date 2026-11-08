@@ -15,7 +15,9 @@
       "Bash(npm start *)",
       "Bash(curl -s http://localhost:3001/health)",
       "Bash(curl -s http://localhost:3000/)",
-      "Bash(mcp__Claude_Browser__preview_start --url http://localhost:3000)"
+      "Bash(mcp__Claude_Browser__preview_start --url http://localhost:3000)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'Phase 2: Lending Features - Foundation *)"
     ]
   }
 }
