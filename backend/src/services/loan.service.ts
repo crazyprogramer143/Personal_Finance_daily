@@ -3,6 +3,7 @@ import LoanProduct from '../models/LoanProduct';
 import LoanSchedule from '../models/LoanSchedule';
 import Disbursement from '../models/Disbursement';
 import Customer from '../models/Customer';
+import accountService from './account.service';
 
 interface CreateLoanRequest {
   customerId: string;
@@ -10,10 +11,11 @@ interface CreateLoanRequest {
   principalAmount: number;
   heldAmount: number;
   durationDays?: number;
+  startDate?: string;
 }
 
 export class LoanService {
-  async createLoan(companyId: string, data: CreateLoanRequest): Promise<Loan> {
+  async createLoan(companyId: string, data: CreateLoanRequest, createdBy?: string): Promise<Loan> {
     const product = await LoanProduct.findByPk(data.loanProductId);
     if (!product) {
       throw new Error('Loan product not found');
@@ -31,24 +33,30 @@ export class LoanService {
 
     const durationDays = data.durationDays || (product.durationDays || 30);
     const disbursedAmount = data.principalAmount - data.heldAmount;
-    const interestRate = product.interestRatePercent || 0;
-    const totalScheduledRepayment = data.principalAmount + (data.principalAmount * interestRate) / 100;
+    const totalScheduledRepayment = data.principalAmount;
+
+    const startDate = data.startDate ? new Date(data.startDate) : new Date();
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + durationDays);
 
     const loan = await Loan.create({
       companyId,
       customerId: data.customerId,
       loanProductId: data.loanProductId,
+      createdBy,
       principalAmount: data.principalAmount,
       heldAmount: data.heldAmount,
       disbursedAmount,
       totalScheduledRepayment,
       durationDays,
       collectionFrequency: product.collectionFrequency || 'daily',
+      startDate,
+      endDate,
       status: 'draft',
     });
 
-    // Calculate and create repayment schedule
-    await this.generateRepaymentSchedule(loan, product, disbursedAmount);
+    // Calculate and create repayment schedule based on principal
+    await this.generateRepaymentSchedule(loan, product);
 
     return loan;
   }
@@ -56,7 +64,6 @@ export class LoanService {
   private async generateRepaymentSchedule(
     loan: Loan,
     product: LoanProduct,
-    disbursedAmount: number
   ): Promise<void> {
     const frequency = product.collectionFrequency;
     const durationDays = loan.durationDays;
@@ -74,20 +81,26 @@ export class LoanService {
       daysBetweenPayments = 30;
     }
 
-    const installmentAmount = Number((disbursedAmount / numberOfInstallments).toFixed(2));
-    const startDate = new Date();
+    const principal = Number(loan.principalAmount);
+    const installmentAmount = Number((principal / numberOfInstallments).toFixed(2));
+    const startDate = loan.startDate ? new Date(loan.startDate) : new Date();
 
     const schedules: Omit<LoanSchedule, 'id' | 'createdAt' | 'updatedAt'>[] = [];
+    let totalAllocated = 0;
     for (let i = 0; i < numberOfInstallments; i++) {
       const dueDate = new Date(startDate);
       dueDate.setDate(dueDate.getDate() + (i + 1) * daysBetweenPayments);
 
+      const isLast = i === numberOfInstallments - 1;
+      const amount = isLast ? Number((principal - totalAllocated).toFixed(2)) : installmentAmount;
+      totalAllocated += amount;
+
       schedules.push({
         loanId: loan.id,
         dueDate,
-        scheduledAmount: installmentAmount,
+        scheduledAmount: amount,
         amountAllocated: 0,
-        remainingDue: installmentAmount,
+        remainingDue: amount,
         status: 'upcoming',
       } as any);
     }
@@ -109,8 +122,8 @@ export class LoanService {
     return loan;
   }
 
-  async disburseLoan(loanId: string, disbursementDate: Date): Promise<Disbursement> {
-    const loan = await Loan.findByPk(loanId);
+  async disburseLoan(loanId: string, disbursementDate: Date, accountId?: string, companyId?: string, disbursementMethod?: string): Promise<Disbursement> {
+    const loan = await Loan.findByPk(loanId, { include: [{ model: Customer }] });
     if (!loan) {
       throw new Error('Loan not found');
     }
@@ -119,15 +132,31 @@ export class LoanService {
       throw new Error('Only approved loans can be disbursed');
     }
 
+    const disbursedAmount = Number(loan.principalAmount) - Number(loan.heldAmount);
+    const method = disbursementMethod || 'cash';
+
     const disbursement = await Disbursement.create({
       loanId,
       principalAmount: loan.principalAmount,
       heldAmount: loan.heldAmount,
-      disbursedAmount: loan.principalAmount - loan.heldAmount,
+      disbursedAmount,
       disbursementDate,
-      disbursementMethod: 'cash',
+      disbursementMethod: method as any,
       status: 'completed',
     });
+
+    if (accountId && companyId) {
+      await accountService.recordTransaction({
+        companyId,
+        accountId,
+        transactionDate: disbursementDate,
+        type: 'debit',
+        amount: disbursedAmount,
+        description: `Loan disbursement to ${(loan as any).Customer?.name || 'Unknown'}`,
+        referenceType: 'disbursement',
+        referenceId: disbursement.id,
+      });
+    }
 
     await loan.update({ status: 'active' });
 

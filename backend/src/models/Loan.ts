@@ -10,6 +10,7 @@ interface LoanAttributes {
   companyId: string;
   customerId: string;
   loanProductId: string;
+  createdBy?: string;
   principalAmount: number;
   heldAmount: number;
   disbursedAmount: number;
@@ -34,6 +35,7 @@ class Loan extends Model<LoanAttributes, LoanCreationAttributes> {
   public companyId!: string;
   public customerId!: string;
   public loanProductId!: string;
+  public createdBy?: string;
   public principalAmount!: number;
   public heldAmount!: number;
   public disbursedAmount!: number;
@@ -81,6 +83,10 @@ Loan.init(
         model: LoanProduct,
         key: 'id',
       },
+    },
+    createdBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
     },
     principalAmount: {
       type: DataTypes.DECIMAL(15, 2),

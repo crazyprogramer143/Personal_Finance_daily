@@ -6,7 +6,7 @@ export class ExpenseController {
   async createExpense(_req: Request, res: Response): Promise<any> {
     try {
       const companyId = (_req as any).user.companyId;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
       const { category, amount, description, expenseDate } = _req.body;
 
       const expense = await expenseService.createExpense(companyId, userId, {
@@ -53,7 +53,7 @@ export class ExpenseController {
   async approveExpense(_req: Request, res: Response): Promise<any> {
     try {
       const { expenseId } = _req.params;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
       const companyId = (_req as any).user.companyId;
 
       const expense = await expenseService.approveExpense(expenseId, userId);
@@ -72,7 +72,7 @@ export class ExpenseController {
     try {
       const { expenseId } = _req.params;
       const companyId = (_req as any).user.companyId;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
 
       const expense = await expenseService.rejectExpense(expenseId);
 

@@ -6,7 +6,7 @@ export class DailyClosingController {
   async createDailyClosing(_req: Request, res: Response): Promise<any> {
     try {
       const companyId = (_req as any).user.companyId;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
       const { closingDate, notes } = _req.body;
 
       const closing = await dailyClosingService.createDailyClosing(companyId, userId, {
@@ -33,7 +33,7 @@ export class DailyClosingController {
     try {
       const { closingId } = _req.params;
       const companyId = (_req as any).user.companyId;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
 
       const closing = await dailyClosingService.submitClosing(closingId);
 
@@ -51,7 +51,7 @@ export class DailyClosingController {
     try {
       const { closingId } = _req.params;
       const companyId = (_req as any).user.companyId;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
 
       const closing = await dailyClosingService.approveClosing(closingId, userId);
 
@@ -69,7 +69,7 @@ export class DailyClosingController {
     try {
       const { closingId } = _req.params;
       const companyId = (_req as any).user.companyId;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
 
       const closing = await dailyClosingService.rejectClosing(closingId);
 

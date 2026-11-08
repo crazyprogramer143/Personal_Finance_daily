@@ -99,6 +99,11 @@ class ApiClient {
     return response.data;
   }
 
+  async deleteCustomer(customerId: string) {
+    const response = await this.client.delete(`/customers/${customerId}`);
+    return response.data;
+  }
+
   // Loan Product endpoints
   async createLoanProduct(data: any) {
     const response = await this.client.post('/loan-products', data);
@@ -120,7 +125,17 @@ class ApiClient {
     return response.data;
   }
 
+  async deactivateLoanProduct(productId: string) {
+    const response = await this.client.post(`/loan-products/${productId}/deactivate`);
+    return response.data;
+  }
+
   // Loan endpoints
+  async getLoans(params?: { search?: string; status?: string; customerId?: string; collectorId?: string }) {
+    const response = await this.client.get('/loans', { params });
+    return response.data;
+  }
+
   async createLoan(data: any) {
     const response = await this.client.post('/loans', data);
     return response.data;
@@ -207,6 +222,58 @@ class ApiClient {
     const params = new URLSearchParams();
     if (limit) params.append('limit', limit.toString());
     const response = await this.client.get(`/accounts/company/ledger?${params}`);
+    return response.data;
+  }
+
+  async holdAmount(accountId: string, amount: number) {
+    const response = await this.client.post(`/accounts/${accountId}/hold`, { accountId, amount });
+    return response.data;
+  }
+
+  async releaseHeldAmount(accountId: string, amount: number) {
+    const response = await this.client.post(`/accounts/${accountId}/release`, { accountId, amount });
+    return response.data;
+  }
+
+  async updateAccountStatus(accountId: string, status: 'active' | 'inactive') {
+    const response = await this.client.put(`/accounts/${accountId}/status`, { status });
+    return response.data;
+  }
+
+  // User/Collector endpoints
+  async createCollector(data: { username: string; password: string }) {
+    const response = await this.client.post('/users/collectors', data);
+    return response.data;
+  }
+
+  async getCollectors() {
+    const response = await this.client.get('/users/collectors');
+    return response.data;
+  }
+
+  async deleteCollector(collectorId: string) {
+    const response = await this.client.delete(`/users/collectors/${collectorId}`);
+    return response.data;
+  }
+
+  async getMyAssignedCustomers() {
+    const response = await this.client.get('/users/me/assigned-customers');
+    return response.data;
+  }
+
+  async assignCollector(customerId: string, collectorId: string) {
+    const response = await this.client.post(`/customers/${customerId}/assign-collector`, { collectorId });
+    return response.data;
+  }
+
+  async unassignCollector(customerId: string, collectorId?: string) {
+    const response = await this.client.post(`/customers/${customerId}/unassign-collector`, { collectorId });
+    return response.data;
+  }
+
+  // Loan update endpoint
+  async updateLoan(loanId: string, data: any) {
+    const response = await this.client.put(`/loans/${loanId}`, data);
     return response.data;
   }
 

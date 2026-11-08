@@ -6,7 +6,7 @@ export class AccountController {
   async createAccount(_req: Request, res: Response): Promise<any> {
     try {
       const companyId = (_req as any).user.companyId;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
       const { name, type, bankName, accountNumber, upiId, currency } = _req.body;
 
       const account = await accountService.createAccount({
@@ -57,7 +57,7 @@ export class AccountController {
   async recordTransaction(_req: Request, res: Response): Promise<any> {
     try {
       const companyId = (_req as any).user.companyId;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
       const { accountId, type, amount, description, referenceType, referenceId, transactionDate } =
         _req.body;
 
@@ -90,7 +90,7 @@ export class AccountController {
   async holdAmount(_req: Request, res: Response): Promise<any> {
     try {
       const companyId = (_req as any).user.companyId;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
       const { accountId, amount } = _req.body;
 
       await accountService.holdAmount(accountId, amount);
@@ -113,7 +113,7 @@ export class AccountController {
   async releaseHeldAmount(_req: Request, res: Response): Promise<any> {
     try {
       const companyId = (_req as any).user.companyId;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
       const { accountId, amount } = _req.body;
 
       await accountService.releaseHeldAmount(accountId, amount);
@@ -162,7 +162,7 @@ export class AccountController {
       const { accountId } = _req.params;
       const { status } = _req.body;
       const companyId = (_req as any).user.companyId;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
 
       const account = await accountService.updateAccountStatus(accountId, status);
 

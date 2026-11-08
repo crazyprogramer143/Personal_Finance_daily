@@ -1,23 +1,30 @@
 import { sequelize } from '../database/connection';
+import { Op } from 'sequelize';
 import Loan from '../models/Loan';
 import LoanSchedule from '../models/LoanSchedule';
 import Customer from '../models/Customer';
 import Payment from '../models/Payment';
+import CustomerCollectorAssignment from '../models/CustomerCollectorAssignment';
 
 export class CollectionService {
-  async getDueSchedules(_collectorId: string, companyId: string, date?: Date): Promise<any[]> {
+  async getDueSchedules(_collectorId: string, companyId: string, date?: Date, role?: string, assignedCustomerIds?: string[]): Promise<any[]> {
     const checkDate = date || new Date();
-    checkDate.setHours(0, 0, 0, 0);
+    checkDate.setHours(23, 59, 59, 999);
+
+    const loanWhere: any = { companyId, status: { [Op.in]: ['active', 'approved'] } };
+    if (role === 'collector' && assignedCustomerIds) {
+      loanWhere.customerId = { [Op.in]: assignedCustomerIds };
+    }
 
     const schedules = await LoanSchedule.findAll({
       where: {
-        dueDate: { $lte: checkDate },
-        status: ['upcoming', 'due', 'overdue', 'partially_paid'],
+        dueDate: { [Op.lte]: checkDate },
+        status: { [Op.in]: ['upcoming', 'due', 'overdue', 'partially_paid'] },
       },
       include: [
         {
           model: Loan,
-          where: { companyId, status: 'active' },
+          where: loanWhere,
           include: [
             { model: Customer },
           ],
@@ -30,16 +37,16 @@ export class CollectionService {
 
   async getCustomerDueLoans(customerId: string): Promise<any[]> {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setHours(23, 59, 59, 999);
 
     const loans = await Loan.findAll({
-      where: { customerId, status: 'active' },
+      where: { customerId, status: { [Op.in]: ['active', 'approved'] } },
       include: [
         {
           model: LoanSchedule,
           where: {
-            dueDate: { $lte: today },
-            status: ['upcoming', 'due', 'overdue', 'partially_paid'],
+            dueDate: { [Op.lte]: today },
+            status: { [Op.in]: ['upcoming', 'due', 'overdue', 'partially_paid'] },
           },
         },
       ],
@@ -58,8 +65,8 @@ export class CollectionService {
       where: {
         collectorId,
         paymentDate: {
-          $gte: new Date(checkDate.getTime() - 24 * 60 * 60 * 1000),
-          $lte: checkDate,
+          [Op.gte]: new Date(checkDate.getTime() - 24 * 60 * 60 * 1000),
+          [Op.lte]: checkDate,
         },
         status: 'completed',
       },
@@ -86,8 +93,8 @@ export class CollectionService {
       where: {
         collectorId,
         paymentDate: {
-          $gte: fromDate,
-          $lte: toDate,
+          [Op.gte]: fromDate,
+          [Op.lte]: toDate,
         },
         status: 'completed',
       },
@@ -179,7 +186,7 @@ export class CollectionService {
   async getOverdueStats(companyId: string): Promise<any> {
     const schedules = await LoanSchedule.findAll({
       where: {
-        status: ['overdue', 'partially_paid'],
+        status: { [Op.in]: ['overdue', 'partially_paid'] },
       },
       include: [
         {
@@ -201,14 +208,20 @@ export class CollectionService {
   }
 
   async getCollectorAssignments(collectorId: string, companyId: string): Promise<Customer[]> {
-    const { CustomerCollectorAssignment } = require('../models/CustomerCollectorAssignment');
-
     const assignments = await CustomerCollectorAssignment.findAll({
       where: { collectorId, companyId },
       include: [{ model: Customer }],
     });
 
     return assignments.map((a: any) => a.Customer);
+  }
+
+  async getAssignedCustomerIds(collectorId: string, companyId: string): Promise<string[]> {
+    const assignments = await CustomerCollectorAssignment.findAll({
+      where: { collectorId, companyId },
+      attributes: ['customerId'],
+    });
+    return assignments.map((a: any) => a.customerId);
   }
 }
 

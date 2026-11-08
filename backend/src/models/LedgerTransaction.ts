@@ -66,7 +66,6 @@ LedgerTransaction.init(
     type: {
       type: DataTypes.ENUM('credit', 'debit'),
       allowNull: false,
-      comment: 'credit = money in, debit = money out',
     },
     amount: {
       type: DataTypes.DECIMAL(15, 2),

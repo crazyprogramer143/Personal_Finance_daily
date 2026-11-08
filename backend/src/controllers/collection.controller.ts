@@ -5,11 +5,17 @@ import auditService from '../services/audit.service';
 export class CollectionController {
   async getDueSchedules(_req: Request, res: Response): Promise<any> {
     try {
-      const collectorId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
       const companyId = (_req as any).user.companyId;
+      const role = (_req as any).user.role;
       const date = _req.query.date ? new Date(_req.query.date as string) : undefined;
 
-      const schedules = await collectionService.getDueSchedules(collectorId, companyId, date);
+      let assignedCustomerIds: string[] | undefined;
+      if (role === 'collector') {
+        assignedCustomerIds = await collectionService.getAssignedCustomerIds(userId, companyId);
+      }
+
+      const schedules = await collectionService.getDueSchedules(userId, companyId, date, role, assignedCustomerIds);
       res.json(schedules);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -28,7 +34,7 @@ export class CollectionController {
 
   async getCollectionStats(_req: Request, res: Response): Promise<any> {
     try {
-      const collectorId = (_req as any).user.id;
+      const collectorId = (_req as any).user.userId;
       const companyId = (_req as any).user.companyId;
       const date = _req.query.date ? new Date(_req.query.date as string) : undefined;
 
@@ -41,7 +47,7 @@ export class CollectionController {
 
   async getCollectorPerformance(_req: Request, res: Response): Promise<any> {
     try {
-      const collectorId = (_req as any).user.id;
+      const collectorId = (_req as any).user.userId;
       const companyId = (_req as any).user.companyId;
       const fromDate = new Date(_req.query.fromDate as string);
       const toDate = new Date(_req.query.toDate as string);
@@ -62,7 +68,7 @@ export class CollectionController {
     try {
       const { scheduleId } = _req.params;
       const { reason } = _req.body;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
       const companyId = (_req as any).user.companyId;
 
       const schedule = await collectionService.waiverInstallment(scheduleId, reason, userId);
@@ -86,7 +92,7 @@ export class CollectionController {
     try {
       const { scheduleId } = _req.params;
       const { graceDays, reason } = _req.body;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
       const companyId = (_req as any).user.companyId;
 
       const schedule = await collectionService.applyGracePeriod(scheduleId, graceDays, reason);
@@ -118,7 +124,7 @@ export class CollectionController {
 
   async getCollectorAssignments(_req: Request, res: Response): Promise<any> {
     try {
-      const collectorId = (_req as any).user.id;
+      const collectorId = (_req as any).user.userId;
       const companyId = (_req as any).user.companyId;
 
       const customers = await collectionService.getCollectorAssignments(collectorId, companyId);

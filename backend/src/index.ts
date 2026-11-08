@@ -50,6 +50,7 @@ import loanProductRoutes from './routes/loan-product.routes';
 import loanRoutes from './routes/loan.routes';
 import paymentRoutes from './routes/payment.routes';
 import accountRoutes from './routes/account.routes';
+import userRoutes from './routes/user.routes';
 
 // Phase 3 Routes
 import collectionRoutes from './routes/collection.routes';
@@ -64,6 +65,7 @@ app.use('/api/loan-products', loanProductRoutes);
 app.use('/api/loans', loanRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/accounts', accountRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/collections', collectionRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/expenses', expenseRoutes);

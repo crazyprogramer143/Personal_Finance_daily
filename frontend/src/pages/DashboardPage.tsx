@@ -1,122 +1,121 @@
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import Layout from '@/components/Layout';
+import {
+  Users,
+  Wallet,
+  HandCoins,
+  TrendingUp,
+  AlertTriangle,
+  ArrowRight,
+  IndianRupee,
+  Clock,
+  CheckCircle2,
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
-  const menuItems = [
-    { label: 'Dashboard', path: '/dashboard', roles: ['accountant', 'collector'] },
-    { label: 'Collections', path: '/collections', roles: ['collector', 'accountant'] },
-    { label: 'Customers', path: '/customers', roles: ['accountant'] },
-    { label: 'Loans', path: '/loans', roles: ['accountant'] },
-    { label: 'Loan Products', path: '/loan-products', roles: ['accountant'] },
-    { label: 'Accounts', path: '/accounts', roles: ['accountant'] },
-    { label: 'Overdue Management', path: '/overdue-management', roles: ['accountant'] },
-    { label: 'Reports', path: '/reports', roles: ['accountant'] },
-    { label: 'Expenses', path: '/expenses', roles: ['accountant'] },
-    { label: 'Daily Closing', path: '/daily-closing', roles: ['accountant'] },
+  const quickActions = [
+    { label: 'Customers', path: '/customers', icon: Users, color: 'from-violet-500 to-purple-600', bg: 'bg-violet-50' },
+    { label: 'Loans', path: '/loans', icon: Wallet, color: 'from-emerald-500 to-teal-500', bg: 'bg-emerald-50' },
+    { label: 'Collections', path: '/collections', icon: HandCoins, color: 'from-blue-500 to-cyan-500', bg: 'bg-blue-50' },
+    { label: 'Reports', path: '/reports', icon: TrendingUp, color: 'from-amber-500 to-orange-500', bg: 'bg-amber-50' },
   ];
 
-  const filteredMenu = menuItems.filter((item) => item.roles.includes(user?.role || ''));
-
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Daily Finance Management</h1>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-          >
-            Logout
-          </button>
+    <Layout>
+      <div className="max-w-6xl mx-auto">
+        {/* Welcome section */}
+        <div className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-2xl p-6 sm:p-8 mb-6 text-white">
+          <h2 className="text-xl sm:text-2xl font-bold">
+            Welcome back{user?.role === 'accountant' ? ', Owner' : ''}
+          </h2>
+          <p className="text-slate-300 mt-1 text-sm">
+            {user?.role === 'accountant'
+              ? 'Here\'s an overview of your business today.'
+              : 'Ready for today\'s collections.'}
+          </p>
         </div>
-      </header>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <nav className="w-64 bg-white shadow-md min-h-screen">
-          <div className="p-4">
-            <p className="text-sm text-gray-600 mb-4">
-              <strong>Role:</strong> {user?.role === 'accountant' ? 'Owner/Accountant' : 'Collector'}
-            </p>
-            <ul className="space-y-2">
-              {filteredMenu.map((item) => (
-                <li key={item.path}>
-                  <button
-                    onClick={() => navigate(item.path)}
-                    className="w-full text-left px-4 py-2 rounded-md hover:bg-blue-100 text-gray-700 hover:text-blue-900"
-                  >
-                    {item.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
+        {/* Quick actions */}
+        {user?.role === 'accountant' && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.path}
+                  onClick={() => navigate(action.path)}
+                  className="group bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 p-5 text-left transition-all"
+                >
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center mb-3 shadow-sm`}>
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <p className="font-semibold text-slate-800 text-sm">{action.label}</p>
+                  <div className="flex items-center gap-1 mt-1 text-xs text-slate-400 group-hover:text-emerald-500 transition-colors">
+                    <span>Open</span>
+                    <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </button>
+              );
+            })}
           </div>
-        </nav>
+        )}
 
-        {/* Main Content */}
-        <main className="flex-1 px-8 py-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-4">Welcome to Dashboard</h2>
+        {/* Placeholder cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-slate-500">Today's Collection</h3>
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <IndianRupee className="w-4 h-4 text-emerald-600" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-slate-800">--</p>
+            <p className="text-xs text-slate-400 mt-1">Data loads with active loans</p>
+          </div>
 
-          <div className="space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-slate-500">Pending</h3>
+              <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+                <Clock className="w-4 h-4 text-amber-600" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-slate-800">--</p>
+            <p className="text-xs text-slate-400 mt-1">Customers due today</p>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-slate-500">Overdue</h3>
+              <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                <AlertTriangle className="w-4 h-4 text-red-500" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-slate-800">--</p>
+            <p className="text-xs text-slate-400 mt-1">Overdue installments</p>
+          </div>
+        </div>
+
+        {/* Info about dashboard */}
+        <div className="mt-6 bg-blue-50/50 border border-blue-100 rounded-xl p-5">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <CheckCircle2 className="w-4 h-4 text-blue-600" />
+            </div>
             <div>
-              <p className="text-gray-600">
-                <strong>Role:</strong> {user?.role === 'accountant' ? 'Owner/Accountant' : 'Collector'}
+              <p className="text-sm font-medium text-blue-800">Dashboard metrics will populate with real data</p>
+              <p className="text-xs text-blue-600 mt-1">
+                Start by adding customers and creating loans. The dashboard will automatically show
+                collection stats, overdue amounts, and financial summaries.
               </p>
             </div>
-
-            {user?.role === 'accountant' && (
-              <div className="mt-6 border-t pt-6">
-                <h3 className="text-lg font-bold mb-4">Dashboard - Phase 1 Placeholder</h3>
-                <p className="text-gray-600 mb-4">
-                  This is a placeholder for the owner dashboard. In Phase 2+, you will see:
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                  <li>Key metrics (Total Principal, Held Amount, Outstanding)</li>
-                  <li>Today's collections status</li>
-                  <li>Quick action buttons</li>
-                  <li>Collector performance overview</li>
-                </ul>
-              </div>
-            )}
-
-            {user?.role === 'collector' && (
-              <div className="mt-6 border-t pt-6">
-                <h3 className="text-lg font-bold mb-4">Collection Screen - Phase 1 Placeholder</h3>
-                <p className="text-gray-600 mb-4">
-                  This is a placeholder for the collector collection screen. In Phase 3, you will see:
-                </p>
-                <ul className="list-disc pl-6 space-y-2 text-gray-600">
-                  <li>Today's due customers list</li>
-                  <li>Quick search by code, name, or phone</li>
-                  <li>Payment recording form</li>
-                  <li>Collection status tracker</li>
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {/* Auth Info */}
-          <div className="mt-8 border-t pt-6">
-            <p className="text-sm text-gray-500">
-              <strong>Company ID:</strong> {user?.companyId}
-            </p>
-            <p className="text-sm text-gray-500">
-              <strong>User ID:</strong> {user?.userId}
-            </p>
           </div>
         </div>
-        </main>
       </div>
-    </div>
+    </Layout>
   );
 }

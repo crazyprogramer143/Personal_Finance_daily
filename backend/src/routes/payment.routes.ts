@@ -4,7 +4,7 @@ import paymentController from '../controllers/payment.controller';
 
 const router = express.Router();
 
-router.post('/', validateToken, requireRole('collector'), paymentController.recordPayment);
+router.post('/', validateToken, paymentController.recordPayment);
 router.post('/:paymentId/reverse', validateToken, requireRole('accountant'), paymentController.reversePayment);
 router.get('/:paymentId', validateToken, paymentController.getPaymentDetails);
 router.get('/loan/:loanId', validateToken, paymentController.getLoanPayments);

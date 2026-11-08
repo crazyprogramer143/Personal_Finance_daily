@@ -84,7 +84,6 @@ Customer.init(
       type: DataTypes.ENUM('en', 'ta'),
       allowNull: true,
       defaultValue: 'en',
-      comment: 'Preferred language for reports/receipts',
     },
     status: {
       type: DataTypes.ENUM('active', 'inactive', 'blocked'),

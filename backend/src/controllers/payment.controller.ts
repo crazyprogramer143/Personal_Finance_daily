@@ -5,9 +5,9 @@ import auditService from '../services/audit.service';
 export class PaymentController {
   async recordPayment(_req: Request, res: Response): Promise<any> {
     try {
-      const { loanId, amountReceived, paymentMethod, referenceNumber, paymentDate, allocations } =
+      const { loanId, amountReceived, paymentMethod, referenceNumber, paymentDate, allocations, accountId } =
         _req.body;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
       const companyId = (_req as any).user.companyId;
 
       const payment = await paymentService.recordPayment(
@@ -18,6 +18,8 @@ export class PaymentController {
           paymentMethod,
           referenceNumber,
           paymentDate: new Date(paymentDate),
+          accountId,
+          companyId,
         },
         allocations
       );
@@ -41,7 +43,7 @@ export class PaymentController {
     try {
       const { paymentId } = _req.params;
       const { reason } = _req.body;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
       const companyId = (_req as any).user.companyId;
 
       const payment = await paymentService.reversePayment(paymentId, reason);
@@ -83,7 +85,7 @@ export class PaymentController {
 
   async getCollectorPayments(_req: Request, res: Response): Promise<any> {
     try {
-      const collectorId = (_req as any).user.id;
+      const collectorId = (_req as any).user.userId;
       const { fromDate, toDate } = _req.query;
 
       const payments = await paymentService.getCollectorPayments(

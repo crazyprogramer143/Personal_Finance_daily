@@ -2,7 +2,9 @@ import Payment from '../models/Payment';
 import PaymentAllocation from '../models/PaymentAllocation';
 import LoanSchedule from '../models/LoanSchedule';
 import Loan from '../models/Loan';
+import Customer from '../models/Customer';
 import { sequelize } from '../database/connection';
+import accountService from './account.service';
 
 interface CreatePaymentRequest {
   loanId: string;
@@ -11,6 +13,8 @@ interface CreatePaymentRequest {
   paymentMethod: 'cash' | 'upi' | 'bank_transfer';
   referenceNumber?: string;
   paymentDate: Date;
+  accountId?: string;
+  companyId?: string;
 }
 
 interface PaymentAllocationData {
@@ -20,7 +24,7 @@ interface PaymentAllocationData {
 
 export class PaymentService {
   async recordPayment(data: CreatePaymentRequest, allocations?: PaymentAllocationData[]): Promise<Payment> {
-    const loan = await Loan.findByPk(data.loanId);
+    const loan = await Loan.findByPk(data.loanId, { include: [{ model: Customer }] });
     if (!loan) {
       throw new Error('Loan not found');
     }
@@ -37,6 +41,19 @@ export class PaymentService {
 
     if (allocations && allocations.length > 0) {
       await this.allocatePaymentToSchedules(payment.id, allocations);
+    }
+
+    if (data.accountId && data.companyId) {
+      await accountService.recordTransaction({
+        companyId: data.companyId,
+        accountId: data.accountId,
+        transactionDate: data.paymentDate,
+        type: 'credit',
+        amount: data.amountReceived,
+        description: `Loan repayment from ${(loan as any).Customer?.name || 'Unknown'}`,
+        referenceType: 'payment',
+        referenceId: payment.id,
+      });
     }
 
     return payment;

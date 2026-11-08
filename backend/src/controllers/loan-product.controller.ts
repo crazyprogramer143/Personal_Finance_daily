@@ -6,7 +6,7 @@ export class LoanProductController {
   async createLoanProduct(_req: Request, res: Response): Promise<any> {
     try {
       const companyId = (_req as any).user.companyId;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
       const {
         name,
         interestRatePercent,
@@ -68,7 +68,7 @@ export class LoanProductController {
     try {
       const { productId } = _req.params;
       const companyId = (_req as any).user.companyId;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
       const {
         name,
         interestRatePercent,
@@ -116,7 +116,7 @@ export class LoanProductController {
     try {
       const { productId } = _req.params;
       const companyId = (_req as any).user.companyId;
-      const userId = (_req as any).user.id;
+      const userId = (_req as any).user.userId;
 
       const product = await LoanProduct.findByPk(productId);
       if (!product) {
