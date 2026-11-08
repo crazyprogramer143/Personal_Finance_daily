@@ -8,6 +8,22 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const connection_1 = require("./database/connection");
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
+// Import all models to initialize them
+require("./models/Company");
+require("./models/User");
+require("./models/AuditLog");
+require("./models/Customer");
+require("./models/LoanProduct");
+require("./models/Loan");
+require("./models/LoanSchedule");
+require("./models/Disbursement");
+require("./models/Account");
+require("./models/Payment");
+require("./models/PaymentAllocation");
+require("./models/CustomerCollectorAssignment");
+require("./models/Expense");
+require("./models/DailyClosing");
+require("./models/LedgerTransaction");
 // Load environment variables
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -26,6 +42,20 @@ app.use((req, _res, next) => {
 });
 // Routes
 app.use('/api/auth', auth_routes_1.default);
+// Phase 2 Routes
+const customer_routes_1 = __importDefault(require("./routes/customer.routes"));
+const loan_product_routes_1 = __importDefault(require("./routes/loan-product.routes"));
+const loan_routes_1 = __importDefault(require("./routes/loan.routes"));
+const payment_routes_1 = __importDefault(require("./routes/payment.routes"));
+const account_routes_1 = __importDefault(require("./routes/account.routes"));
+// Phase 3 Routes
+const collection_routes_1 = __importDefault(require("./routes/collection.routes"));
+app.use('/api/customers', customer_routes_1.default);
+app.use('/api/loan-products', loan_product_routes_1.default);
+app.use('/api/loans', loan_routes_1.default);
+app.use('/api/payments', payment_routes_1.default);
+app.use('/api/accounts', account_routes_1.default);
+app.use('/api/collections', collection_routes_1.default);
 // Health check
 app.get('/health', (_req, _res) => {
     _res.json({ status: 'ok', timestamp: new Date().toISOString() });

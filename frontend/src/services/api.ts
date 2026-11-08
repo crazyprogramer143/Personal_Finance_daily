@@ -209,6 +209,59 @@ class ApiClient {
     const response = await this.client.get(`/accounts/company/ledger?${params}`);
     return response.data;
   }
+
+  // Collection endpoints
+  async getDueSchedules(date?: Date) {
+    const params = new URLSearchParams();
+    if (date) params.append('date', date.toISOString());
+    const response = await this.client.get(`/collections/due-schedules?${params}`);
+    return response.data;
+  }
+
+  async getCustomerDueLoans(customerId: string) {
+    const response = await this.client.get(`/collections/customer/${customerId}/due-loans`);
+    return response.data;
+  }
+
+  async getCollectionStats(date?: Date) {
+    const params = new URLSearchParams();
+    if (date) params.append('date', date.toISOString());
+    const response = await this.client.get(`/collections/stats?${params}`);
+    return response.data;
+  }
+
+  async getCollectorPerformance(fromDate: Date, toDate: Date) {
+    const params = new URLSearchParams();
+    params.append('fromDate', fromDate.toISOString());
+    params.append('toDate', toDate.toISOString());
+    const response = await this.client.get(`/collections/performance?${params}`);
+    return response.data;
+  }
+
+  async getOverdueStats() {
+    const response = await this.client.get('/collections/overdue-stats');
+    return response.data;
+  }
+
+  async getCollectorAssignments() {
+    const response = await this.client.get('/collections/assignments');
+    return response.data;
+  }
+
+  async waiverInstallment(scheduleId: string, reason: string) {
+    const response = await this.client.post(`/collections/schedules/${scheduleId}/waiver`, {
+      reason,
+    });
+    return response.data;
+  }
+
+  async applyGracePeriod(scheduleId: string, graceDays: number, reason: string) {
+    const response = await this.client.post(
+      `/collections/schedules/${scheduleId}/grace-period`,
+      { graceDays, reason }
+    );
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();

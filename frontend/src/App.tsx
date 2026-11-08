@@ -8,6 +8,8 @@ import CustomersPage from '@/pages/CustomersPage';
 import LoanProductsPage from '@/pages/LoanProductsPage';
 import AccountsPage from '@/pages/AccountsPage';
 import LoansPage from '@/pages/LoansPage';
+import CollectionsPage from '@/pages/CollectionsPage';
+import OverdueManagementPage from '@/pages/OverdueManagementPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -65,6 +67,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <LoansPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/collections"
+        element={
+          <ProtectedRoute>
+            <CollectionsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/overdue-management"
+        element={
+          <ProtectedRoute>
+            <OverdueManagementPage />
           </ProtectedRoute>
         }
       />

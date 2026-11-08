@@ -12,10 +12,12 @@ export default function DashboardPage() {
 
   const menuItems = [
     { label: 'Dashboard', path: '/dashboard', roles: ['accountant', 'collector'] },
+    { label: 'Collections', path: '/collections', roles: ['collector', 'accountant'] },
     { label: 'Customers', path: '/customers', roles: ['accountant'] },
     { label: 'Loans', path: '/loans', roles: ['accountant'] },
     { label: 'Loan Products', path: '/loan-products', roles: ['accountant'] },
     { label: 'Accounts', path: '/accounts', roles: ['accountant'] },
+    { label: 'Overdue Management', path: '/overdue-management', roles: ['accountant'] },
   ];
 
   const filteredMenu = menuItems.filter((item) => item.roles.includes(user?.role || ''));

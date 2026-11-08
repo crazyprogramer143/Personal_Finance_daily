@@ -17,7 +17,9 @@
       "Bash(curl -s http://localhost:3000/)",
       "Bash(mcp__Claude_Browser__preview_start --url http://localhost:3000)",
       "Bash(git add *)",
-      "Bash(git commit -m 'Phase 2: Lending Features - Foundation *)"
+      "Bash(git commit -m 'Phase 2: Lending Features - Foundation *)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(git commit -m 'Add Phase 2 completion report with full implementation details *)"
     ]
   }
 }
