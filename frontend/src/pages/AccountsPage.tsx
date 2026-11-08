@@ -992,7 +992,17 @@ export default function AccountsPage() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-800 truncate">{entry.description}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-medium text-slate-800">{entry.description?.replace(/\s*\([A-Z][A-Z0-9-]*\)\s*/g, ' ').trim()}</p>
+                          {(() => {
+                            const codeMatch = entry.description?.match(/\(([A-Z][A-Z0-9-]*)\)/);
+                            return codeMatch ? (
+                              <span className="inline-flex items-center px-1.5 py-0.5 bg-violet-50 text-violet-700 text-[10px] font-bold rounded">
+                                {codeMatch[1]}
+                              </span>
+                            ) : null;
+                          })()}
+                        </div>
                         <div className="flex items-center gap-2 text-[10px] text-slate-400">
                           <span>{new Date(entry.transactionDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                           {entry.referenceType && (

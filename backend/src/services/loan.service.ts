@@ -156,7 +156,7 @@ export class LoanService {
         transactionDate: disbursementDate,
         type: 'debit',
         amount: disbursedAmount,
-        description: `Loan disbursement to ${(loan as any).Customer?.name || 'Unknown'}`,
+        description: `Loan disbursement${loan.loanCode ? ` (${loan.loanCode})` : ''} to ${(loan as any).Customer?.name || 'Unknown'}`,
         referenceType: 'disbursement',
         referenceId: disbursement.id,
       });

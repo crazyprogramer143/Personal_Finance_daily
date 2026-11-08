@@ -3,6 +3,7 @@ import PaymentAllocation from '../models/PaymentAllocation';
 import LoanSchedule from '../models/LoanSchedule';
 import Loan from '../models/Loan';
 import Customer from '../models/Customer';
+import { Op } from 'sequelize';
 import { sequelize } from '../database/connection';
 import accountService from './account.service';
 
@@ -169,8 +170,8 @@ export class PaymentService {
 
     if (fromDate || toDate) {
       whereClause.paymentDate = {};
-      if (fromDate) whereClause.paymentDate.$gte = fromDate;
-      if (toDate) whereClause.paymentDate.$lte = toDate;
+      if (fromDate) whereClause.paymentDate[Op.gte] = fromDate;
+      if (toDate) whereClause.paymentDate[Op.lte] = toDate;
     }
 
     return Payment.findAll({

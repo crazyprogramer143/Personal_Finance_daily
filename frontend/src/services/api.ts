@@ -386,8 +386,13 @@ class ApiClient {
     return response.data;
   }
 
-  async approveExpense(expenseId: string) {
-    const response = await this.client.post(`/expenses/${expenseId}/approve`);
+  async getMyExpenses() {
+    const response = await this.client.get('/expenses/my');
+    return response.data;
+  }
+
+  async approveExpense(expenseId: string, accountId?: string) {
+    const response = await this.client.post(`/expenses/${expenseId}/approve`, { accountId });
     return response.data;
   }
 

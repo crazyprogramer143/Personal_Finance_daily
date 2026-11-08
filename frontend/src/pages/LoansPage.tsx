@@ -125,6 +125,9 @@ export default function LoansPage() {
   const [filterCustomerId, setFilterCustomerId] = useState('');
   const [filterCollectorId, setFilterCollectorId] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [scheduleAction, setScheduleAction] = useState<{ id: string; type: 'waive' | 'skip' | 'grace'; amount: number } | null>(null);
+  const [scheduleActionReason, setScheduleActionReason] = useState('');
+  const [scheduleGraceDays, setScheduleGraceDays] = useState(1);
 
   const [formData, setFormData] = useState({
     customerId: '',
@@ -352,6 +355,32 @@ export default function LoansPage() {
       showToast('Failed to load loan details', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleScheduleAction = async () => {
+    if (!scheduleAction || !scheduleActionReason.trim()) return;
+    try {
+      setActionLoading(scheduleAction.id);
+      if (scheduleAction.type === 'waive') {
+        await apiClient.waiverInstallment(scheduleAction.id, scheduleActionReason);
+      } else if (scheduleAction.type === 'skip') {
+        await apiClient.skipInstallment(scheduleAction.id, scheduleActionReason);
+      } else if (scheduleAction.type === 'grace') {
+        await apiClient.applyGracePeriod(scheduleAction.id, scheduleGraceDays, scheduleActionReason);
+      }
+      showToast(`Installment ${scheduleAction.type === 'waive' ? 'waived' : scheduleAction.type === 'skip' ? 'skipped' : 'grace period applied'} successfully`, 'success');
+      setScheduleAction(null);
+      setScheduleActionReason('');
+      setScheduleGraceDays(1);
+      if (selectedLoan) {
+        const details = await apiClient.getLoanDetails(selectedLoan.id);
+        setSelectedLoan(details);
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.error || `Failed to ${scheduleAction.type}`, 'error');
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -795,9 +824,9 @@ export default function LoansPage() {
                 Repayment Schedule
               </h3>
               {(selectedLoan as any).LoanSchedules && (selectedLoan as any).LoanSchedules.length > 0 ? (
-                <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-thin">
-                  {(selectedLoan as any).LoanSchedules.slice(0, 10).map((schedule: any, idx: number) => (
-                    <div key={schedule.id || idx} className="flex items-center justify-between text-sm py-1.5 border-b border-slate-50 last:border-0">
+                <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-thin">
+                  {(selectedLoan as any).LoanSchedules.map((schedule: any, idx: number) => (
+                    <div key={schedule.id || idx} className="flex items-center justify-between text-sm py-2 px-2 border border-slate-100 rounded-lg hover:bg-slate-50 transition-colors">
                       <div className="flex items-center gap-2">
                         <span className="w-6 h-6 rounded-md bg-slate-100 text-[10px] font-bold text-slate-600 flex items-center justify-center">
                           {idx + 1}
@@ -809,19 +838,43 @@ export default function LoansPage() {
                         <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
                           schedule.status === 'paid' ? 'bg-emerald-50 text-emerald-700' :
                           schedule.status === 'overdue' ? 'bg-red-50 text-red-700' :
-                          schedule.status === 'partial' ? 'bg-amber-50 text-amber-700' :
+                          schedule.status === 'partially_paid' ? 'bg-amber-50 text-amber-700' :
+                          schedule.status === 'waived' ? 'bg-purple-50 text-purple-700' :
+                          schedule.status === 'skipped' ? 'bg-blue-50 text-blue-700' :
                           'bg-slate-50 text-slate-600'
                         }`}>
                           {schedule.status}
                         </span>
+                        {selectedLoan?.status === 'active' && ['upcoming', 'due', 'overdue', 'partially_paid'].includes(schedule.status) && (
+                          <div className="flex items-center gap-1 ml-1">
+                            {isAccountant && (
+                              <button
+                                onClick={() => setScheduleAction({ id: schedule.id, type: 'waive', amount: Number(schedule.scheduledAmount) })}
+                                className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 hover:bg-purple-100 font-medium transition-colors"
+                                title="Waive"
+                              >
+                                Waive
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setScheduleAction({ id: schedule.id, type: 'skip', amount: Number(schedule.scheduledAmount) })}
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium transition-colors"
+                              title="Skip"
+                            >
+                              Skip
+                            </button>
+                            <button
+                              onClick={() => setScheduleAction({ id: schedule.id, type: 'grace', amount: Number(schedule.scheduledAmount) })}
+                              className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 hover:bg-amber-100 font-medium transition-colors"
+                              title="Grace Period"
+                            >
+                              Grace
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
-                  {(selectedLoan as any).LoanSchedules.length > 10 && (
-                    <p className="text-xs text-slate-400 text-center pt-2">
-                      +{(selectedLoan as any).LoanSchedules.length - 10} more installments
-                    </p>
-                  )}
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -1161,6 +1214,63 @@ export default function LoansPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Schedule Action Modal (Waive/Skip/Grace) */}
+      {scheduleAction && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setScheduleAction(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className={`p-4 text-white ${
+              scheduleAction.type === 'waive' ? 'bg-gradient-to-r from-purple-500 to-violet-600' :
+              scheduleAction.type === 'skip' ? 'bg-gradient-to-r from-blue-500 to-indigo-600' :
+              'bg-gradient-to-r from-amber-500 to-orange-600'
+            }`}>
+              <h3 className="text-base font-bold capitalize">{scheduleAction.type === 'grace' ? 'Apply Grace Period' : `${scheduleAction.type} Installment`}</h3>
+              <p className="text-white/70 text-xs">Amount: {formatCurrency(scheduleAction.amount)}</p>
+            </div>
+            <div className="p-4 space-y-3">
+              {scheduleAction.type === 'grace' && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Grace Days</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={scheduleGraceDays}
+                    onChange={(e) => setScheduleGraceDays(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Reason</label>
+                <textarea
+                  value={scheduleActionReason}
+                  onChange={(e) => setScheduleActionReason(e.target.value)}
+                  rows={2}
+                  placeholder={`Why ${scheduleAction.type} this installment?`}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                  required
+                />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button onClick={() => { setScheduleAction(null); setScheduleActionReason(''); }} className="flex-1 px-3 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-xl hover:bg-slate-200 transition-colors">
+                  Cancel
+                </button>
+                <button
+                  onClick={handleScheduleAction}
+                  disabled={!scheduleActionReason.trim() || !!actionLoading}
+                  className={`flex-1 px-3 py-2 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 ${
+                    scheduleAction.type === 'waive' ? 'bg-purple-500 hover:bg-purple-600' :
+                    scheduleAction.type === 'skip' ? 'bg-blue-500 hover:bg-blue-600' :
+                    'bg-amber-500 hover:bg-amber-600'
+                  }`}
+                >
+                  {actionLoading ? 'Processing...' : 'Confirm'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

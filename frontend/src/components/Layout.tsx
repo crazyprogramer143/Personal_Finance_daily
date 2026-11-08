@@ -36,7 +36,7 @@ const navItems: NavItem[] = [
   { label: 'Accounts', path: '/accounts', icon: Landmark, roles: ['accountant'] },
   { label: 'Overdue', path: '/overdue-management', icon: AlertTriangle, roles: ['accountant'] },
   { label: 'Reports', path: '/reports', icon: BarChart3, roles: ['accountant'] },
-  { label: 'Expenses', path: '/expenses', icon: BadgeDollarSign, roles: ['accountant'] },
+  { label: 'Expenses', path: '/expenses', icon: BadgeDollarSign, roles: ['accountant', 'collector'] },
   { label: 'Daily Closing', path: '/daily-closing', icon: CalendarCheck, roles: ['accountant'] },
 ];
 

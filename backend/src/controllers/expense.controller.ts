@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import expenseService from '../services/expense.service';
+import accountService from '../services/account.service';
 import auditService from '../services/audit.service';
 
 export class ExpenseController {
@@ -31,6 +32,17 @@ export class ExpenseController {
     }
   }
 
+  async getMyExpenses(_req: Request, res: Response): Promise<any> {
+    try {
+      const userId = (_req as any).user.userId;
+      const companyId = (_req as any).user.companyId;
+      const expenses = await expenseService.getUserExpenses(userId, companyId);
+      res.json(expenses);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
   async getCompanyExpenses(_req: Request, res: Response): Promise<any> {
     try {
       const companyId = (_req as any).user.companyId;
@@ -55,11 +67,26 @@ export class ExpenseController {
       const { expenseId } = _req.params;
       const userId = (_req as any).user.userId;
       const companyId = (_req as any).user.companyId;
+      const { accountId } = _req.body;
 
       const expense = await expenseService.approveExpense(expenseId, userId);
 
+      if (accountId) {
+        await accountService.recordTransaction({
+          companyId,
+          accountId,
+          transactionDate: new Date(expense.expenseDate),
+          type: 'debit',
+          amount: Number(expense.amount),
+          description: `Expense: ${expense.category} - ${expense.description}`,
+          referenceType: 'expense',
+          referenceId: expense.id,
+        });
+      }
+
       await auditService.logAction(companyId, userId, 'UPDATE', 'Expense', expenseId, {
         status: 'approved',
+        accountId,
       });
 
       res.json(expense);

@@ -5,6 +5,7 @@ import expenseController from '../controllers/expense.controller';
 const router = express.Router();
 
 router.post('/', validateToken, expenseController.createExpense);
+router.get('/my', validateToken, expenseController.getMyExpenses);
 router.get('/', validateToken, requireRole('accountant'), expenseController.getCompanyExpenses);
 router.post('/:expenseId/approve', validateToken, requireRole('accountant'), expenseController.approveExpense);
 router.post('/:expenseId/reject', validateToken, requireRole('accountant'), expenseController.rejectExpense);
