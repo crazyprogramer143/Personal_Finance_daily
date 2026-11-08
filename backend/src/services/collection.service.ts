@@ -255,25 +255,6 @@ export class CollectionService {
     });
   }
 
-  async applyGracePeriod(
-    scheduleId: string,
-    graceDays: number,
-    _reason: string
-  ): Promise<LoanSchedule> {
-    const schedule = await LoanSchedule.findByPk(scheduleId);
-    if (!schedule) {
-      throw new Error('Schedule not found');
-    }
-
-    const originalDueDate = schedule.originalDueDate || schedule.dueDate;
-    const newDueDate = new Date(schedule.dueDate);
-    newDueDate.setDate(newDueDate.getDate() + graceDays);
-
-    await schedule.update({ dueDate: newDueDate, originalDueDate });
-
-    return schedule;
-  }
-
   async getOverdueStats(companyId: string, date?: Date): Promise<any> {
     const asOfDate = date || new Date();
     asOfDate.setHours(0, 0, 0, 0);

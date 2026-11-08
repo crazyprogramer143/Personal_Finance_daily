@@ -13,7 +13,6 @@ import {
   Smartphone,
   Building2,
   ShieldCheck,
-  CalendarPlus,
   RefreshCw,
   User,
   FileText,
@@ -41,7 +40,6 @@ interface Schedule {
   totalInstallments?: number;
   loanCode?: string;
   skipReason?: string;
-  originalDueDate?: string;
   Loan?: {
     id: string;
     loanCode?: string;
@@ -65,7 +63,7 @@ interface OverdueStats {
 }
 
 type TabType = 'overdue' | 'due' | 'all';
-type ModalType = 'payment' | 'waiver' | 'grace' | 'skip' | null;
+type ModalType = 'payment' | 'waiver' | 'skip' | null;
 
 export default function CollectionsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('due');
@@ -88,7 +86,6 @@ export default function CollectionsPage() {
   });
   const [waiverReason, setWaiverReason] = useState('');
   const [skipReason, setSkipReason] = useState('');
-  const [graceForm, setGraceForm] = useState({ days: '', reason: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
@@ -207,12 +204,6 @@ export default function CollectionsPage() {
     setModalType('skip');
   };
 
-  const openGraceModal = (schedule: Schedule) => {
-    setSelectedSchedule(schedule);
-    setGraceForm({ days: '', reason: '' });
-    setModalType('grace');
-  };
-
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSchedule) return;
@@ -269,22 +260,6 @@ export default function CollectionsPage() {
       loadData();
     } catch (err: any) {
       showToast(err.response?.data?.error || 'Failed to skip installment', 'error');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleGracePeriod = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedSchedule) return;
-    try {
-      setSubmitting(true);
-      await apiClient.applyGracePeriod(selectedSchedule.id, Number(graceForm.days), graceForm.reason);
-      showToast('Grace period applied successfully', 'success');
-      setModalType(null);
-      loadData();
-    } catch (err: any) {
-      showToast(err.response?.data?.error || 'Failed to apply grace period', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -558,11 +533,6 @@ export default function CollectionsPage() {
                             year: 'numeric',
                           })}
                         </span>
-                        {schedule.originalDueDate && (
-                          <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded text-xs font-medium" title={`Originally due ${new Date(schedule.originalDueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`}>
-                            Grace (was {new Date(schedule.originalDueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })})
-                          </span>
-                        )}
                         {schedule.status === 'overdue' && daysOverdue > 0 && (
                           <span className="px-1.5 py-0.5 bg-red-50 text-red-600 rounded text-xs font-medium">
                             {daysOverdue}d overdue
@@ -608,22 +578,13 @@ export default function CollectionsPage() {
                           Record Payment
                         </button>
                         {(schedule.status === 'overdue' || schedule.status === 'due') && (
-                          <>
-                            <button
-                              onClick={() => openWaiverModal(schedule)}
-                              className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-purple-200 text-purple-700 rounded-lg text-xs font-medium hover:bg-purple-50 transition-colors"
-                            >
-                              <ShieldCheck className="w-3.5 h-3.5" />
-                              Waive
-                            </button>
-                            <button
-                              onClick={() => openGraceModal(schedule)}
-                              className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-blue-200 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-50 transition-colors"
-                            >
-                              <CalendarPlus className="w-3.5 h-3.5" />
-                              Grace Period
-                            </button>
-                          </>
+                          <button
+                            onClick={() => openWaiverModal(schedule)}
+                            className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-purple-200 text-purple-700 rounded-lg text-xs font-medium hover:bg-purple-50 transition-colors"
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            Waive
+                          </button>
                         )}
                         <button
                           onClick={() => openSkipModal(schedule)}
@@ -911,91 +872,6 @@ export default function CollectionsPage() {
           </div>
         )}
 
-        {/* Grace Period Modal */}
-        {modalType === 'grace' && selectedSchedule && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                      <CalendarPlus className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-white">Apply Grace Period</h2>
-                      <p className="text-blue-100 text-xs">{selectedSchedule.Loan?.Customer?.name}</p>
-                    </div>
-                  </div>
-                  <button onClick={() => setModalType(null)} className="text-white/70 hover:text-white">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              <form onSubmit={handleGracePeriod} className="p-6 space-y-5">
-                <div className="bg-blue-50 rounded-xl p-4">
-                  <p className="text-xs text-blue-600">
-                    Current due date: <strong>{new Date(selectedSchedule.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>
-                  </p>
-                  {graceForm.days && Number(graceForm.days) > 0 && (
-                    <p className="text-xs text-blue-600 mt-1">
-                      New due date: <strong>
-                        {(() => {
-                          const d = new Date(selectedSchedule.dueDate);
-                          d.setDate(d.getDate() + Number(graceForm.days));
-                          return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-                        })()}
-                      </strong>
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Grace Days *</label>
-                  <input
-                    type="number"
-                    value={graceForm.days}
-                    onChange={(e) => setGraceForm((f) => ({ ...f, days: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
-                    placeholder="Number of days to extend"
-                    required
-                    min="1"
-                    max="90"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Reason *</label>
-                  <textarea
-                    value={graceForm.reason}
-                    onChange={(e) => setGraceForm((f) => ({ ...f, reason: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 resize-none"
-                    placeholder="Reason for extending the grace period..."
-                    rows={3}
-                    required
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setModalType(null)}
-                    className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="flex-1 px-4 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 shadow-sm"
-                  >
-                    {submitting ? 'Applying...' : 'Apply Grace Period'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
     </Layout>
   );

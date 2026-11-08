@@ -112,30 +112,6 @@ export class CollectionController {
     }
   }
 
-  async applyGracePeriod(_req: Request, res: Response): Promise<any> {
-    try {
-      const { scheduleId } = _req.params;
-      const { graceDays, reason } = _req.body;
-      const userId = (_req as any).user.userId;
-      const companyId = (_req as any).user.companyId;
-
-      const schedule = await collectionService.applyGracePeriod(scheduleId, graceDays, reason);
-
-      await auditService.logAction(
-        companyId,
-        userId,
-        'UPDATE',
-        'LoanSchedule',
-        scheduleId,
-        { graceDaysAdded: graceDays, reason }
-      );
-
-      res.json(schedule);
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
-    }
-  }
-
   async getOverdueStats(_req: Request, res: Response): Promise<any> {
     try {
       const companyId = (_req as any).user.companyId;

@@ -331,14 +331,6 @@ class ApiClient {
     return response.data;
   }
 
-  async applyGracePeriod(scheduleId: string, graceDays: number, reason: string) {
-    const response = await this.client.post(
-      `/collections/schedules/${scheduleId}/grace-period`,
-      { graceDays, reason }
-    );
-    return response.data;
-  }
-
   // Report endpoints
   async getCollectionPerformanceReport(fromDate: Date, toDate: Date) {
     const params = new URLSearchParams();

@@ -17,6 +17,5 @@ router.get('/overdue-stats', validateToken, collectionController.getOverdueStats
 // Installment management
 router.post('/schedules/:scheduleId/waiver', validateToken, requireRole('accountant'), collectionController.waiverInstallment);
 router.post('/schedules/:scheduleId/skip', validateToken, collectionController.skipInstallment);
-router.post('/schedules/:scheduleId/grace-period', validateToken, collectionController.applyGracePeriod);
 
 export default router;

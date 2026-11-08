@@ -7,7 +7,6 @@ interface LoanScheduleAttributes {
   id: string;
   loanId: string;
   dueDate: Date;
-  originalDueDate?: Date;
   scheduledAmount: number;
   amountAllocated: number;
   remainingDue: number;
@@ -24,7 +23,6 @@ class LoanSchedule extends Model<LoanScheduleAttributes, LoanScheduleCreationAtt
   public id!: string;
   public loanId!: string;
   public dueDate!: Date;
-  public originalDueDate?: Date;
   public scheduledAmount!: number;
   public amountAllocated!: number;
   public remainingDue!: number;
@@ -54,11 +52,6 @@ LoanSchedule.init(
       type: DataTypes.DATE,
       allowNull: false,
       comment: 'When this installment is due',
-    },
-    originalDueDate: {
-      type: DataTypes.DATE,
-      allowNull: true,
-      comment: 'Original due date before grace period was applied',
     },
     scheduledAmount: {
       type: DataTypes.DECIMAL(15, 2),
