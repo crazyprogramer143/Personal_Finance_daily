@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import Payment from '../models/Payment';
 import Loan from '../models/Loan';
 import Customer from '../models/Customer';
@@ -10,11 +11,14 @@ export class ReportService {
     fromDate: Date,
     toDate: Date
   ): Promise<any> {
+    const endOfDay = new Date(toDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
     const payments = await Payment.findAll({
       where: {
         paymentDate: {
-          $gte: fromDate,
-          $lte: toDate,
+          [Op.gte]: fromDate,
+          [Op.lte]: endOfDay,
         },
         status: 'completed',
       },
@@ -52,11 +56,14 @@ export class ReportService {
     fromDate: Date,
     toDate: Date
   ): Promise<any> {
+    const endOfDay = new Date(toDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
     const payments = await Payment.findAll({
       where: {
         paymentDate: {
-          $gte: fromDate,
-          $lte: toDate,
+          [Op.gte]: fromDate,
+          [Op.lte]: endOfDay,
         },
         status: 'completed',
       },

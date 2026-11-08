@@ -1,6 +1,8 @@
+import { Op } from 'sequelize';
 import DailyClosing from '../models/DailyClosing';
 import Payment from '../models/Payment';
 import Expense from '../models/Expense';
+import Loan from '../models/Loan';
 import { sequelize } from '../database/connection';
 
 interface CreateClosingRequest {
@@ -22,19 +24,20 @@ export class DailyClosingService {
     const payments = await Payment.findAll({
       where: {
         paymentDate: {
-          $gte: closingDate,
-          $lt: nextDay,
+          [Op.gte]: closingDate,
+          [Op.lt]: nextDay,
         },
         status: 'completed',
       },
+      include: [{ model: Loan, where: { companyId }, attributes: [] }],
     });
 
     const expenses = await Expense.findAll({
       where: {
         companyId,
         expenseDate: {
-          $gte: closingDate,
-          $lt: nextDay,
+          [Op.gte]: closingDate,
+          [Op.lt]: nextDay,
         },
         status: 'approved',
       },
@@ -141,19 +144,20 @@ export class DailyClosingService {
     const payments = await Payment.findAll({
       where: {
         paymentDate: {
-          $gte: closingDate,
-          $lt: nextDay,
+          [Op.gte]: closingDate,
+          [Op.lt]: nextDay,
         },
         status: 'completed',
       },
+      include: [{ model: Loan, where: { companyId: closing.companyId }, attributes: [] }],
     });
 
     const expenses = await Expense.findAll({
       where: {
         companyId: closing.companyId,
         expenseDate: {
-          $gte: closingDate,
-          $lt: nextDay,
+          [Op.gte]: closingDate,
+          [Op.lt]: nextDay,
         },
         status: 'approved',
       },

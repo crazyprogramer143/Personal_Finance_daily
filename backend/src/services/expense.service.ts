@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import Expense from '../models/Expense';
 import { sequelize } from '../database/connection';
 
@@ -35,8 +36,8 @@ export class ExpenseService {
 
     if (fromDate || toDate) {
       where.expenseDate = {};
-      if (fromDate) where.expenseDate.$gte = fromDate;
-      if (toDate) where.expenseDate.$lte = toDate;
+      if (fromDate) where.expenseDate[Op.gte] = fromDate;
+      if (toDate) where.expenseDate[Op.lte] = toDate;
     }
 
     if (status) {
@@ -45,6 +46,7 @@ export class ExpenseService {
 
     return Expense.findAll({
       where,
+      include: [{ model: (await import('../models/User')).default, attributes: ['id', 'username'] }],
       order: [['expenseDate', 'DESC']],
     });
   }
@@ -95,8 +97,8 @@ export class ExpenseService {
 
     if (fromDate || toDate) {
       where.expenseDate = {};
-      if (fromDate) where.expenseDate.$gte = fromDate;
-      if (toDate) where.expenseDate.$lte = toDate;
+      if (fromDate) where.expenseDate[Op.gte] = fromDate;
+      if (toDate) where.expenseDate[Op.lte] = toDate;
     }
 
     const expenses = await Expense.findAll({ where });
