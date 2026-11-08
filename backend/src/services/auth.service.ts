@@ -179,10 +179,10 @@ export class AuthService {
         role,
         assignedCustomers,
       },
-      secret,
+      secret as string,
       {
         expiresIn: process.env.JWT_EXPIRY || '7d',
-      }
+      } as any
     );
 
     return token;

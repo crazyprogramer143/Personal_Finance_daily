@@ -25,7 +25,7 @@ export class AuthController {
    * Company signup endpoint
    * POST /api/auth/signup
    */
-  static async signup(req: any, res: Response) {
+  static async signup(req: any, res: Response): Promise<any> {
     try {
       const { error, value } = signupSchema.validate(req.body);
       if (error) {
@@ -44,7 +44,7 @@ export class AuthController {
    * Owner login endpoint
    * POST /api/auth/login/owner
    */
-  static async loginOwner(req: any, res: Response) {
+  static async loginOwner(req: any, res: Response): Promise<any> {
     try {
       const { error, value } = ownerLoginSchema.validate(req.body);
       if (error) {
@@ -66,7 +66,7 @@ export class AuthController {
    * Collector login endpoint
    * POST /api/auth/login/collector
    */
-  static async loginCollector(req: any, res: Response) {
+  static async loginCollector(req: any, res: Response): Promise<any> {
     try {
       const { error, value } = collectorLoginSchema.validate(req.body);
       if (error) {
@@ -88,7 +88,7 @@ export class AuthController {
    * Login endpoint (auto-detect owner or collector)
    * POST /api/auth/login
    */
-  static async login(req: any, res: Response) {
+  static async login(req: any, res: Response): Promise<any> {
     try {
       const { email, username, password } = req.body;
 
@@ -116,7 +116,7 @@ export class AuthController {
    * Verify token endpoint
    * GET /api/auth/me
    */
-  static async me(req: AuthRequest, res: Response) {
+  static async me(req: AuthRequest, res: Response): Promise<any> {
     try {
       if (!req.user) {
         return res.status(401).json({ error: 'Unauthorized' });

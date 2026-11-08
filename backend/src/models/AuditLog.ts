@@ -93,12 +93,6 @@ AuditLog.init(
     tableName: 'audit_logs',
     timestamps: true,
     updatedAt: false,
-    indexes: [
-      { fields: ['company_id'] },
-      { fields: ['user_id'] },
-      { fields: ['entity_type', 'entity_id'] },
-      { fields: ['created_at'] },
-    ],
   }
 );
 

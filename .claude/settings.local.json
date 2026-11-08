@@ -1,7 +1,21 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm --version)"
+      "Bash(npm --version)",
+      "Bash(psql -U postgres -c \"CREATE DATABASE daily_finance_dev;\")",
+      "Bash(brew services *)",
+      "Bash(psql -l)",
+      "Bash(createdb daily_finance_dev)",
+      "Bash(npm run *)",
+      "Bash(npx ts-node *)",
+      "Bash(npx tsc *)",
+      "Bash(node dist/index.js)",
+      "Bash(./node_modules/.bin/tsc)",
+      "Bash(npm install *)",
+      "Bash(npm start *)",
+      "Bash(curl -s http://localhost:3001/health)",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(mcp__Claude_Browser__preview_start --url http://localhost:3000)"
     ]
   }
 }

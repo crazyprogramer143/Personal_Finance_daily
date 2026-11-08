@@ -1,4 +1,4 @@
-import { DataTypes, Model, Optional, ForeignKey } from 'sequelize';
+import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../database/connection';
 import { v4 as uuidv4 } from 'uuid';
 import Company from './Company';
@@ -45,12 +45,10 @@ User.init(
     username: {
       type: DataTypes.STRING(255),
       allowNull: true,
-      unique: 'unique_username_per_company',
     },
     email: {
       type: DataTypes.STRING(255),
       allowNull: true,
-      unique: 'unique_email_per_company',
       validate: {
         isEmail: true,
       },
@@ -69,28 +67,6 @@ User.init(
     sequelize,
     tableName: 'users',
     timestamps: true,
-    indexes: [
-      {
-        name: 'unique_username_per_company',
-        unique: true,
-        fields: ['company_id', 'username'],
-        where: {
-          username: {
-            [sequelize.Sequelize.Op.ne]: null,
-          },
-        },
-      },
-      {
-        name: 'unique_email_per_company',
-        unique: true,
-        fields: ['company_id', 'email'],
-        where: {
-          email: {
-            [sequelize.Sequelize.Op.ne]: null,
-          },
-        },
-      },
-    ],
   }
 );
 

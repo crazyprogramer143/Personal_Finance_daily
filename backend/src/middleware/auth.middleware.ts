@@ -10,7 +10,7 @@ export interface AuthRequest extends Request {
   };
 }
 
-export const validateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const validateToken = (req: AuthRequest, res: Response, next: NextFunction): any => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -48,7 +48,7 @@ export const validateToken = (req: AuthRequest, res: Response, next: NextFunctio
 };
 
 export const requireRole = (role: 'accountant' | 'collector' | 'any') => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
+  return (req: AuthRequest, res: Response, next: NextFunction): any => {
     if (!req.user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
