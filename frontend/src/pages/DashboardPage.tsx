@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 
@@ -10,6 +9,15 @@ export default function DashboardPage() {
     logout();
     navigate('/login');
   };
+
+  const menuItems = [
+    { label: 'Dashboard', path: '/dashboard', roles: ['accountant', 'collector'] },
+    { label: 'Customers', path: '/customers', roles: ['accountant'] },
+    { label: 'Loan Products', path: '/loan-products', roles: ['accountant'] },
+    { label: 'Accounts', path: '/accounts', roles: ['accountant'] },
+  ];
+
+  const filteredMenu = menuItems.filter((item) => item.roles.includes(user?.role || ''));
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -26,8 +34,30 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <div className="flex">
+        {/* Sidebar */}
+        <nav className="w-64 bg-white shadow-md min-h-screen">
+          <div className="p-4">
+            <p className="text-sm text-gray-600 mb-4">
+              <strong>Role:</strong> {user?.role === 'accountant' ? 'Owner/Accountant' : 'Collector'}
+            </p>
+            <ul className="space-y-2">
+              {filteredMenu.map((item) => (
+                <li key={item.path}>
+                  <button
+                    onClick={() => navigate(item.path)}
+                    className="w-full text-left px-4 py-2 rounded-md hover:bg-blue-100 text-gray-700 hover:text-blue-900"
+                  >
+                    {item.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </nav>
+
+        {/* Main Content */}
+        <main className="flex-1 px-8 py-8">
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-bold mb-4">Welcome to Dashboard</h2>
 
@@ -79,7 +109,8 @@ export default function DashboardPage() {
             </p>
           </div>
         </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

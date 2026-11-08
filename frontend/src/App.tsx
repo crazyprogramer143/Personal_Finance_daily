@@ -4,6 +4,9 @@ import { AuthProvider, useAuth } from '@/context/AuthContext';
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
 import DashboardPage from '@/pages/DashboardPage';
+import CustomersPage from '@/pages/CustomersPage';
+import LoanProductsPage from '@/pages/LoanProductsPage';
+import AccountsPage from '@/pages/AccountsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -29,6 +32,30 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/customers"
+        element={
+          <ProtectedRoute>
+            <CustomersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/loan-products"
+        element={
+          <ProtectedRoute>
+            <LoanProductsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/accounts"
+        element={
+          <ProtectedRoute>
+            <AccountsPage />
           </ProtectedRoute>
         }
       />

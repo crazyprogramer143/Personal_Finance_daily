@@ -4,6 +4,23 @@ import dotenv from 'dotenv';
 import { initializeDatabase } from './database/connection';
 import authRoutes from './routes/auth.routes';
 
+// Import all models to initialize them
+import './models/Company';
+import './models/User';
+import './models/AuditLog';
+import './models/Customer';
+import './models/LoanProduct';
+import './models/Loan';
+import './models/LoanSchedule';
+import './models/Disbursement';
+import './models/Account';
+import './models/Payment';
+import './models/PaymentAllocation';
+import './models/CustomerCollectorAssignment';
+import './models/Expense';
+import './models/DailyClosing';
+import './models/LedgerTransaction';
+
 // Load environment variables
 dotenv.config();
 
@@ -26,6 +43,19 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+
+// Phase 2 Routes
+import customerRoutes from './routes/customer.routes';
+import loanProductRoutes from './routes/loan-product.routes';
+import loanRoutes from './routes/loan.routes';
+import paymentRoutes from './routes/payment.routes';
+import accountRoutes from './routes/account.routes';
+
+app.use('/api/customers', customerRoutes);
+app.use('/api/loan-products', loanProductRoutes);
+app.use('/api/loans', loanRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/accounts', accountRoutes);
 
 // Health check
 app.get('/health', (_req: Request, _res: Response) => {
