@@ -832,6 +832,11 @@ export default function LoansPage() {
                           {idx + 1}
                         </span>
                         <span className="text-slate-600">{formatDate(schedule.dueDate)}</span>
+                        {schedule.originalDueDate && (
+                          <span className="text-[9px] px-1 py-0.5 bg-amber-50 text-amber-600 rounded font-medium">
+                            was {formatDate(schedule.originalDueDate)}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-slate-900">{formatCurrency(schedule.scheduledAmount)}</span>

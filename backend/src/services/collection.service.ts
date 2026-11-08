@@ -265,10 +265,11 @@ export class CollectionService {
       throw new Error('Schedule not found');
     }
 
+    const originalDueDate = schedule.originalDueDate || schedule.dueDate;
     const newDueDate = new Date(schedule.dueDate);
     newDueDate.setDate(newDueDate.getDate() + graceDays);
 
-    await schedule.update({ dueDate: newDueDate });
+    await schedule.update({ dueDate: newDueDate, originalDueDate });
 
     return schedule;
   }

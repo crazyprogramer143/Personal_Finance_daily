@@ -41,6 +41,7 @@ interface Schedule {
   totalInstallments?: number;
   loanCode?: string;
   skipReason?: string;
+  originalDueDate?: string;
   Loan?: {
     id: string;
     loanCode?: string;
@@ -557,6 +558,11 @@ export default function CollectionsPage() {
                             year: 'numeric',
                           })}
                         </span>
+                        {schedule.originalDueDate && (
+                          <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded text-xs font-medium" title={`Originally due ${new Date(schedule.originalDueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`}>
+                            Grace (was {new Date(schedule.originalDueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })})
+                          </span>
+                        )}
                         {schedule.status === 'overdue' && daysOverdue > 0 && (
                           <span className="px-1.5 py-0.5 bg-red-50 text-red-600 rounded text-xs font-medium">
                             {daysOverdue}d overdue
