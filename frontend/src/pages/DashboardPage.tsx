@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const menuItems = [
     { label: 'Dashboard', path: '/dashboard', roles: ['accountant', 'collector'] },
     { label: 'Customers', path: '/customers', roles: ['accountant'] },
+    { label: 'Loans', path: '/loans', roles: ['accountant'] },
     { label: 'Loan Products', path: '/loan-products', roles: ['accountant'] },
     { label: 'Accounts', path: '/accounts', roles: ['accountant'] },
   ];

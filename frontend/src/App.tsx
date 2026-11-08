@@ -7,6 +7,7 @@ import DashboardPage from '@/pages/DashboardPage';
 import CustomersPage from '@/pages/CustomersPage';
 import LoanProductsPage from '@/pages/LoanProductsPage';
 import AccountsPage from '@/pages/AccountsPage';
+import LoansPage from '@/pages/LoansPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -56,6 +57,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <AccountsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/loans"
+        element={
+          <ProtectedRoute>
+            <LoansPage />
           </ProtectedRoute>
         }
       />
