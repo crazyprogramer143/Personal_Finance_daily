@@ -49,7 +49,7 @@ export class ReportService {
       collectionCount,
       averagePerCollection: collectionCount > 0 ? totalCollected / collectionCount : 0,
       paymentMethods,
-      paymentsByDate: this.groupByDate(payments),
+      paymentsByDate: this.groupByDateDetailed(payments),
     };
   }
 
@@ -311,12 +311,45 @@ export class ReportService {
     };
   }
 
-  private groupByDate(payments: Payment[]): any {
-    const grouped = new Map<string, number>();
+  private groupByDateDetailed(payments: Payment[]): any {
+    const grouped = new Map<string, { total: number; byMethod: Record<string, { count: number; amount: number }>; byCollector: Record<string, { name: string; count: number; amount: number }>; payments: any[] }>();
 
-    payments.forEach((payment) => {
+    payments.forEach((payment: any) => {
       const date = new Date(payment.paymentDate).toISOString().split('T')[0];
-      grouped.set(date, (grouped.get(date) || 0) + Number(payment.amountReceived));
+      if (!grouped.has(date)) {
+        grouped.set(date, {
+          total: 0,
+          byMethod: { cash: { count: 0, amount: 0 }, upi: { count: 0, amount: 0 }, bank_transfer: { count: 0, amount: 0 } },
+          byCollector: {},
+          payments: [],
+        });
+      }
+      const day = grouped.get(date)!;
+      const amt = Number(payment.amountReceived);
+      day.total += amt;
+
+      const method = payment.paymentMethod as string;
+      if (day.byMethod[method]) {
+        day.byMethod[method].count += 1;
+        day.byMethod[method].amount += amt;
+      }
+
+      const collectorId = payment.collectorId || 'owner';
+      const collectorName = payment.User?.username || 'Owner';
+      if (!day.byCollector[collectorId]) {
+        day.byCollector[collectorId] = { name: collectorName, count: 0, amount: 0 };
+      }
+      day.byCollector[collectorId].count += 1;
+      day.byCollector[collectorId].amount += amt;
+
+      day.payments.push({
+        id: payment.id,
+        amountReceived: payment.amountReceived,
+        paymentMethod: payment.paymentMethod,
+        customerName: payment.Loan?.Customer?.name,
+        loanCode: payment.Loan?.loanCode,
+        collectorName,
+      });
     });
 
     return Object.fromEntries(grouped);
