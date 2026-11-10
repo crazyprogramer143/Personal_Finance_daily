@@ -23,6 +23,9 @@ import {
   Building2,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -50,12 +53,17 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dayBookDate, setDayBookDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [dayBookLoading, setDayBookLoading] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     collections: false, disbursements: false, expenses: false,
   });
 
   const toggleSection = (key: string) =>
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isToday = dayBookDate === todayStr;
 
   useEffect(() => {
     loadDashboardData();
@@ -105,6 +113,41 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadDayBook(dateStr: string) {
+    try {
+      setDayBookLoading(true);
+      const date = new Date(dateStr + 'T00:00:00');
+      const dayBook = await apiClient.getDayBookReport(date, date);
+      setStats(prev => prev ? { ...prev, dayBook } : prev);
+    } catch (err) {
+      console.error('Failed to load day book:', err);
+    } finally {
+      setDayBookLoading(false);
+    }
+  }
+
+  function shiftDayBookDate(days: number) {
+    const d = new Date(dayBookDate + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    const newDate = d.toISOString().split('T')[0];
+    setDayBookDate(newDate);
+    loadDayBook(newDate);
+  }
+
+  function handleDayBookDateChange(dateStr: string) {
+    setDayBookDate(dateStr);
+    loadDayBook(dateStr);
+  }
+
+  function formatDayBookLabel(dateStr: string) {
+    if (dateStr === todayStr) return "Today's Day Book";
+    const d = new Date(dateStr + 'T00:00:00');
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (dateStr === yesterday.toISOString().split('T')[0]) return "Yesterday's Day Book";
+    return `Day Book — ${d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`;
   }
 
   const quickActions = [
@@ -304,14 +347,42 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Today's Day Book */}
+        {/* Day Book */}
         {stats?.dayBook && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-amber-500" />
-                Today's Day Book
+                {formatDayBookLabel(dayBookDate)}
+                {dayBookLoading && <RefreshCw className="w-3.5 h-3.5 text-slate-400 animate-spin" />}
               </h3>
+              <div className="flex items-center gap-1">
+                <button onClick={() => shiftDayBookDate(-1)} className="p-1 rounded hover:bg-slate-100 transition-colors">
+                  <ChevronLeft className="w-4 h-4 text-slate-500" />
+                </button>
+                <input
+                  type="date"
+                  value={dayBookDate}
+                  max={todayStr}
+                  onChange={(e) => handleDayBookDateChange(e.target.value)}
+                  className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-300"
+                />
+                <button
+                  onClick={() => shiftDayBookDate(1)}
+                  disabled={isToday}
+                  className="p-1 rounded hover:bg-slate-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-4 h-4 text-slate-500" />
+                </button>
+                {!isToday && (
+                  <button
+                    onClick={() => handleDayBookDateChange(todayStr)}
+                    className="text-[10px] text-amber-600 hover:text-amber-700 font-medium ml-1"
+                  >
+                    Today
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Summary row */}

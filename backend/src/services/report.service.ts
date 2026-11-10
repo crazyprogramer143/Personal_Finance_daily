@@ -13,13 +13,15 @@ export class ReportService {
     fromDate: Date,
     toDate: Date
   ): Promise<any> {
+    const startOfDay = new Date(fromDate);
+    startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(toDate);
     endOfDay.setHours(23, 59, 59, 999);
 
     const payments = await Payment.findAll({
       where: {
         paymentDate: {
-          [Op.gte]: fromDate,
+          [Op.gte]: startOfDay,
           [Op.lte]: endOfDay,
         },
         status: 'completed',
@@ -58,13 +60,15 @@ export class ReportService {
     fromDate: Date,
     toDate: Date
   ): Promise<any> {
+    const startOfDay = new Date(fromDate);
+    startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(toDate);
     endOfDay.setHours(23, 59, 59, 999);
 
     const payments = await Payment.findAll({
       where: {
         paymentDate: {
-          [Op.gte]: fromDate,
+          [Op.gte]: startOfDay,
           [Op.lte]: endOfDay,
         },
         status: 'completed',
@@ -222,10 +226,12 @@ export class ReportService {
     fromDate: Date,
     toDate: Date
   ): Promise<any> {
+    const startOfDay = new Date(fromDate);
+    startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(toDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const dateFilter = { [Op.gte]: fromDate, [Op.lte]: endOfDay };
+    const dateFilter = { [Op.gte]: startOfDay, [Op.lte]: endOfDay };
 
     const [collections, disbursements, expenses] = await Promise.all([
       Payment.findAll({
