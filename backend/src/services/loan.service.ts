@@ -59,15 +59,13 @@ export class LoanService {
       status: 'draft',
     });
 
-    // Calculate and create repayment schedule based on principal
-    await this.generateRepaymentSchedule(loan, product);
-
     return loan;
   }
 
   private async generateRepaymentSchedule(
     loan: Loan,
     product: LoanProduct,
+    overrideStartDate?: Date,
   ): Promise<void> {
     const frequency = product.collectionFrequency;
     const durationDays = loan.durationDays;
@@ -87,7 +85,7 @@ export class LoanService {
 
     const principal = Number(loan.principalAmount);
     const installmentAmount = Number((principal / numberOfInstallments).toFixed(2));
-    const startDate = loan.startDate ? new Date(loan.startDate) : new Date();
+    const startDate = overrideStartDate || (loan.startDate ? new Date(loan.startDate) : new Date());
 
     const schedules: Omit<LoanSchedule, 'id' | 'createdAt' | 'updatedAt'>[] = [];
     let totalAllocated = 0;
@@ -162,7 +160,16 @@ export class LoanService {
       });
     }
 
-    await loan.update({ status: 'active' });
+    const newStartDate = new Date(disbursementDate);
+    const newEndDate = new Date(newStartDate);
+    newEndDate.setDate(newEndDate.getDate() + loan.durationDays);
+
+    await loan.update({ status: 'active', startDate: newStartDate, endDate: newEndDate });
+
+    const product = await LoanProduct.findByPk(loan.loanProductId);
+    if (product) {
+      await this.generateRepaymentSchedule(loan, product, newStartDate);
+    }
 
     return disbursement;
   }
