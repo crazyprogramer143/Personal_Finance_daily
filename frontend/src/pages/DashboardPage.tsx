@@ -73,16 +73,23 @@ export default function DashboardPage() {
     try {
       setLoading(true);
       const today = new Date();
+      const isAccountant = user?.role === 'accountant';
 
-      const [collectionStats, overdueStats, dueSchedules, loans, customers, accounts, dayBook] = await Promise.all([
+      const [collectionStats, overdueStats, dueSchedules, loans, customers, accounts] = await Promise.all([
         apiClient.getCollectionStats(today),
         apiClient.getOverdueStats(today),
         apiClient.getDueSchedules(today),
         apiClient.getLoans(),
         apiClient.getCustomers(),
         apiClient.getCompanyAccounts(),
-        apiClient.getDayBookReport(today, today),
       ]);
+
+      let dayBook = null;
+      if (isAccountant) {
+        try {
+          dayBook = await apiClient.getDayBookReport(today, today);
+        } catch { /* collector or failed — skip */ }
+      }
 
       const activeLoans = loans.filter((l: any) => l.status === 'active');
       const totalActiveLoanAmount = activeLoans.reduce((sum: number, l: any) => sum + parseFloat(l.principalAmount || 0), 0);
