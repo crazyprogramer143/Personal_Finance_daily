@@ -4,6 +4,8 @@ import Loan from '../models/Loan';
 import Customer from '../models/Customer';
 import User from '../models/User';
 import LoanSchedule from '../models/LoanSchedule';
+import Disbursement from '../models/Disbursement';
+import Expense from '../models/Expense';
 
 export class ReportService {
   async getCollectionPerformanceReport(
@@ -212,6 +214,100 @@ export class ReportService {
       totalOverdueCount: overdueSchedules.length,
       overdueByDays: Object.fromEntries(overdueByDays),
       overdueSchedules: overdueSchedules.slice(0, 100),
+    };
+  }
+
+  async getDayBookReport(
+    companyId: string,
+    fromDate: Date,
+    toDate: Date
+  ): Promise<any> {
+    const endOfDay = new Date(toDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const dateFilter = { [Op.gte]: fromDate, [Op.lte]: endOfDay };
+
+    const [collections, disbursements, expenses] = await Promise.all([
+      Payment.findAll({
+        where: { paymentDate: dateFilter, status: 'completed' },
+        include: [
+          { model: Loan, where: { companyId }, include: [{ model: Customer }] },
+          { model: User },
+        ],
+        order: [['paymentDate', 'DESC']],
+      }),
+      Disbursement.findAll({
+        where: { disbursementDate: dateFilter, status: 'completed' },
+        include: [
+          { model: Loan, where: { companyId }, include: [{ model: Customer }] },
+        ],
+        order: [['disbursementDate', 'DESC']],
+      }),
+      Expense.findAll({
+        where: { companyId, expenseDate: dateFilter, status: 'approved' },
+        include: [{ model: User }],
+        order: [['expenseDate', 'DESC']],
+      }),
+    ]);
+
+    const totalCollections = collections.reduce((sum, p) => sum + Number(p.amountReceived), 0);
+    const totalDisbursements = disbursements.reduce((sum, d: any) => sum + Number(d.disbursedAmount), 0);
+    const totalExpenses = expenses.reduce((sum, e: any) => sum + Number(e.amount), 0);
+
+    const collectionsByMethod = {
+      cash: { count: 0, amount: 0 },
+      upi: { count: 0, amount: 0 },
+      bank_transfer: { count: 0, amount: 0 },
+    };
+    collections.forEach((p) => {
+      const method = p.paymentMethod as keyof typeof collectionsByMethod;
+      if (collectionsByMethod[method]) {
+        collectionsByMethod[method].count += 1;
+        collectionsByMethod[method].amount += Number(p.amountReceived);
+      }
+    });
+
+    return {
+      summary: {
+        totalCollections,
+        totalDisbursements,
+        totalExpenses,
+        netCashFlow: totalCollections - totalDisbursements - totalExpenses,
+        collectionsCount: collections.length,
+        disbursementsCount: disbursements.length,
+        expensesCount: expenses.length,
+        collectionsByMethod,
+      },
+      collections: collections.map((p: any) => ({
+        id: p.id,
+        paymentDate: p.paymentDate,
+        amountReceived: p.amountReceived,
+        paymentMethod: p.paymentMethod,
+        referenceNumber: p.referenceNumber,
+        loanCode: p.Loan?.loanCode,
+        customerName: p.Loan?.Customer?.name,
+        customerCode: p.Loan?.Customer?.code,
+        collectorName: p.User?.username,
+      })),
+      disbursements: disbursements.map((d: any) => ({
+        id: d.id,
+        disbursementDate: d.disbursementDate,
+        principalAmount: d.principalAmount,
+        heldAmount: d.heldAmount,
+        disbursedAmount: d.disbursedAmount,
+        disbursementMethod: d.disbursementMethod,
+        loanCode: d.Loan?.loanCode,
+        customerName: d.Loan?.Customer?.name,
+        customerCode: d.Loan?.Customer?.code,
+      })),
+      expenses: expenses.map((e: any) => ({
+        id: e.id,
+        expenseDate: e.expenseDate,
+        category: e.category,
+        description: e.description,
+        amount: e.amount,
+        createdBy: e.User?.username,
+      })),
     };
   }
 

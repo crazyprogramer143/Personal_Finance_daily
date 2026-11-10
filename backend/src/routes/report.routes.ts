@@ -33,5 +33,11 @@ router.get(
   requireRole('accountant'),
   reportController.getOverdueAnalysisReport
 );
+router.get(
+  '/day-book',
+  validateToken,
+  requireRole('accountant'),
+  reportController.getDayBookReport
+);
 
 export default router;

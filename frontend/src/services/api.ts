@@ -363,6 +363,14 @@ class ApiClient {
     return response.data;
   }
 
+  async getDayBookReport(fromDate: Date, toDate: Date) {
+    const params = new URLSearchParams();
+    params.append('fromDate', fromDate.toISOString());
+    params.append('toDate', toDate.toISOString());
+    const response = await this.client.get(`/reports/day-book?${params}`);
+    return response.data;
+  }
+
   // Expense endpoints
   async createExpense(data: any) {
     const response = await this.client.post('/expenses', data);

@@ -65,6 +65,18 @@ export class ReportController {
       res.status(400).json({ error: error.message });
     }
   }
+  async getDayBookReport(_req: Request, res: Response): Promise<any> {
+    try {
+      const companyId = (_req as any).user.companyId;
+      const fromDate = new Date(_req.query.fromDate as string);
+      const toDate = new Date(_req.query.toDate as string);
+
+      const report = await reportService.getDayBookReport(companyId, fromDate, toDate);
+      res.json(report);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  }
 }
 
 export default new ReportController();
