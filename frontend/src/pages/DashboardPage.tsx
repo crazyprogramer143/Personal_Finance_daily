@@ -16,6 +16,13 @@ import {
   BarChart3,
   Calendar,
   CreditCard,
+  BookOpen,
+  Receipt,
+  Banknote,
+  Smartphone,
+  Building2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -35,6 +42,7 @@ interface DashboardStats {
   totalBalance: number;
   recentSchedules: any[];
   overdueSchedules: any[];
+  dayBook: any | null;
 }
 
 export default function DashboardPage() {
@@ -42,6 +50,12 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    collections: false, disbursements: false, expenses: false,
+  });
+
+  const toggleSection = (key: string) =>
+    setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
 
   useEffect(() => {
     loadDashboardData();
@@ -52,13 +66,14 @@ export default function DashboardPage() {
       setLoading(true);
       const today = new Date();
 
-      const [collectionStats, overdueStats, dueSchedules, loans, customers, accounts] = await Promise.all([
+      const [collectionStats, overdueStats, dueSchedules, loans, customers, accounts, dayBook] = await Promise.all([
         apiClient.getCollectionStats(today),
         apiClient.getOverdueStats(today),
         apiClient.getDueSchedules(today),
         apiClient.getLoans(),
         apiClient.getCustomers(),
         apiClient.getCompanyAccounts(),
+        apiClient.getDayBookReport(today, today),
       ]);
 
       const activeLoans = loans.filter((l: any) => l.status === 'active');
@@ -83,6 +98,7 @@ export default function DashboardPage() {
         totalBalance,
         recentSchedules: dueSchedules.slice(0, 5),
         overdueSchedules: (overdueStats.overdueSchedules || []).slice(0, 5),
+        dayBook,
       });
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -287,6 +303,193 @@ export default function DashboardPage() {
             )}
           </button>
         </div>
+
+        {/* Today's Day Book */}
+        {stats?.dayBook && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-amber-500" />
+                Today's Day Book
+              </h3>
+            </div>
+
+            {/* Summary row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
+                <p className="text-xs text-slate-500 mb-0.5">Collections</p>
+                <p className="text-lg font-bold text-emerald-700">{formatCurrency(stats.dayBook.summary.totalCollections)}</p>
+                <p className="text-[10px] text-slate-400">{stats.dayBook.summary.collectionsCount} entries</p>
+              </div>
+              <div className="bg-violet-50 rounded-lg p-3 border border-violet-100">
+                <p className="text-xs text-slate-500 mb-0.5">Disbursements</p>
+                <p className="text-lg font-bold text-violet-700">{formatCurrency(stats.dayBook.summary.totalDisbursements)}</p>
+                <p className="text-[10px] text-slate-400">{stats.dayBook.summary.disbursementsCount} entries</p>
+              </div>
+              <div className="bg-red-50 rounded-lg p-3 border border-red-100">
+                <p className="text-xs text-slate-500 mb-0.5">Expenses</p>
+                <p className="text-lg font-bold text-red-700">{formatCurrency(stats.dayBook.summary.totalExpenses)}</p>
+                <p className="text-[10px] text-slate-400">{stats.dayBook.summary.expensesCount} entries</p>
+              </div>
+              <div className={`${stats.dayBook.summary.netCashFlow >= 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'} rounded-lg p-3 border`}>
+                <p className="text-xs text-slate-500 mb-0.5">Net Cash Flow</p>
+                <p className={`text-lg font-bold ${stats.dayBook.summary.netCashFlow >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatCurrency(stats.dayBook.summary.netCashFlow)}</p>
+                <p className="text-[10px] text-slate-400">in − out</p>
+              </div>
+            </div>
+
+            {/* Collection method breakdown */}
+            {stats.dayBook.summary.collectionsCount > 0 && (
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="flex items-center gap-2 bg-amber-50 rounded-lg px-3 py-2">
+                  <Banknote className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-slate-500">Cash ({stats.dayBook.summary.collectionsByMethod.cash.count})</p>
+                    <p className="text-sm font-bold text-slate-800">{formatCurrency(stats.dayBook.summary.collectionsByMethod.cash.amount)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
+                  <Smartphone className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-slate-500">UPI ({stats.dayBook.summary.collectionsByMethod.upi.count})</p>
+                    <p className="text-sm font-bold text-slate-800">{formatCurrency(stats.dayBook.summary.collectionsByMethod.upi.amount)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-2">
+                  <Building2 className="w-4 h-4 text-slate-600 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-slate-500">Bank ({stats.dayBook.summary.collectionsByMethod.bank_transfer.count})</p>
+                    <p className="text-sm font-bold text-slate-800">{formatCurrency(stats.dayBook.summary.collectionsByMethod.bank_transfer.amount)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Collapsible detail sections */}
+            <div className="space-y-2">
+              {/* Collections */}
+              {stats.dayBook.collections.length > 0 && (
+                <div className="border border-slate-100 rounded-lg overflow-hidden">
+                  <button onClick={() => toggleSection('collections')} className="w-full flex items-center justify-between px-3 py-2 bg-emerald-50 hover:bg-emerald-100 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <ArrowDownRight className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-xs font-semibold text-slate-700">Collections</span>
+                      <span className="text-[10px] bg-emerald-200 text-emerald-800 px-1.5 py-0.5 rounded-full">{stats.dayBook.collections.length}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-emerald-700">{formatCurrency(stats.dayBook.summary.totalCollections)}</span>
+                      {expandedSections.collections ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+                    </div>
+                  </button>
+                  {expandedSections.collections && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-slate-100">
+                            <th className="text-left py-2 px-3 text-[10px] font-semibold text-slate-500">Customer</th>
+                            <th className="text-left py-2 px-3 text-[10px] font-semibold text-slate-500">Loan</th>
+                            <th className="text-right py-2 px-3 text-[10px] font-semibold text-slate-500">Amount</th>
+                            <th className="text-left py-2 px-3 text-[10px] font-semibold text-slate-500">Method</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {stats.dayBook.collections.map((c: any) => (
+                            <tr key={c.id} className="border-b border-slate-50 hover:bg-slate-50">
+                              <td className="py-1.5 px-3 text-xs font-medium text-slate-700">{c.customerName}</td>
+                              <td className="py-1.5 px-3 text-[10px] text-slate-500 font-mono">{c.loanCode}</td>
+                              <td className="py-1.5 px-3 text-xs font-semibold text-emerald-600 text-right">{formatCurrency(Number(c.amountReceived))}</td>
+                              <td className="py-1.5 px-3 text-[10px] text-slate-500 capitalize">{c.paymentMethod?.replace('_', ' ')}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Disbursements */}
+              {stats.dayBook.disbursements.length > 0 && (
+                <div className="border border-slate-100 rounded-lg overflow-hidden">
+                  <button onClick={() => toggleSection('disbursements')} className="w-full flex items-center justify-between px-3 py-2 bg-violet-50 hover:bg-violet-100 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <ArrowUpRight className="w-3.5 h-3.5 text-violet-600" />
+                      <span className="text-xs font-semibold text-slate-700">Disbursements</span>
+                      <span className="text-[10px] bg-violet-200 text-violet-800 px-1.5 py-0.5 rounded-full">{stats.dayBook.disbursements.length}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-violet-700">{formatCurrency(stats.dayBook.summary.totalDisbursements)}</span>
+                      {expandedSections.disbursements ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+                    </div>
+                  </button>
+                  {expandedSections.disbursements && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-slate-100">
+                            <th className="text-left py-2 px-3 text-[10px] font-semibold text-slate-500">Customer</th>
+                            <th className="text-left py-2 px-3 text-[10px] font-semibold text-slate-500">Loan</th>
+                            <th className="text-right py-2 px-3 text-[10px] font-semibold text-slate-500">Disbursed</th>
+                            <th className="text-right py-2 px-3 text-[10px] font-semibold text-slate-500">Held</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {stats.dayBook.disbursements.map((d: any) => (
+                            <tr key={d.id} className="border-b border-slate-50 hover:bg-slate-50">
+                              <td className="py-1.5 px-3 text-xs font-medium text-slate-700">{d.customerName}</td>
+                              <td className="py-1.5 px-3 text-[10px] text-slate-500 font-mono">{d.loanCode}</td>
+                              <td className="py-1.5 px-3 text-xs font-semibold text-violet-600 text-right">{formatCurrency(Number(d.disbursedAmount))}</td>
+                              <td className="py-1.5 px-3 text-xs text-slate-500 text-right">{formatCurrency(Number(d.heldAmount))}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Expenses */}
+              {stats.dayBook.expenses.length > 0 && (
+                <div className="border border-slate-100 rounded-lg overflow-hidden">
+                  <button onClick={() => toggleSection('expenses')} className="w-full flex items-center justify-between px-3 py-2 bg-red-50 hover:bg-red-100 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <Receipt className="w-3.5 h-3.5 text-red-600" />
+                      <span className="text-xs font-semibold text-slate-700">Expenses</span>
+                      <span className="text-[10px] bg-red-200 text-red-800 px-1.5 py-0.5 rounded-full">{stats.dayBook.expenses.length}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-red-700">{formatCurrency(stats.dayBook.summary.totalExpenses)}</span>
+                      {expandedSections.expenses ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+                    </div>
+                  </button>
+                  {expandedSections.expenses && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-slate-100">
+                            <th className="text-left py-2 px-3 text-[10px] font-semibold text-slate-500">Category</th>
+                            <th className="text-left py-2 px-3 text-[10px] font-semibold text-slate-500">Description</th>
+                            <th className="text-right py-2 px-3 text-[10px] font-semibold text-slate-500">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {stats.dayBook.expenses.map((e: any) => (
+                            <tr key={e.id} className="border-b border-slate-50 hover:bg-slate-50">
+                              <td className="py-1.5 px-3 text-xs text-slate-700 capitalize">{e.category?.replace('_', ' ')}</td>
+                              <td className="py-1.5 px-3 text-xs text-slate-600 max-w-[180px] truncate">{e.description}</td>
+                              <td className="py-1.5 px-3 text-xs font-semibold text-red-600 text-right">{formatCurrency(Number(e.amount))}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Due today and Overdue sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

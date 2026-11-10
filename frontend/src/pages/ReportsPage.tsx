@@ -13,12 +13,6 @@ import {
   Smartphone,
   Building2,
   RefreshCw,
-  BookOpen,
-  ArrowDownLeft,
-  ArrowUpRight,
-  Receipt,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
 
 const REPORTS = [
@@ -26,7 +20,6 @@ const REPORTS = [
   { id: 'collector-comparison', label: 'Collector Comparison', desc: 'Compare collectors by total collected and efficiency', icon: Users, color: 'blue' },
   { id: 'loan-portfolio', label: 'Loan Portfolio', desc: 'Overview of all loans, principal, disbursed, and outstanding', icon: Briefcase, color: 'violet' },
   { id: 'overdue-analysis', label: 'Overdue Analysis', desc: 'Overdue amounts bucketed by days past due', icon: AlertTriangle, color: 'red' },
-  { id: 'day-book', label: 'Day Book', desc: 'Daily financial summary — collections, disbursements, expenses', icon: BookOpen, color: 'amber' },
 ] as const;
 
 const colorMap: Record<string, { bg: string; text: string; border: string; light: string }> = {
@@ -34,7 +27,6 @@ const colorMap: Record<string, { bg: string; text: string; border: string; light
   blue: { bg: 'bg-blue-500', text: 'text-blue-600', border: 'border-blue-200', light: 'bg-blue-50' },
   violet: { bg: 'bg-violet-500', text: 'text-violet-600', border: 'border-violet-200', light: 'bg-violet-50' },
   red: { bg: 'bg-red-500', text: 'text-red-600', border: 'border-red-200', light: 'bg-red-50' },
-  amber: { bg: 'bg-amber-500', text: 'text-amber-600', border: 'border-amber-200', light: 'bg-amber-50' },
 };
 
 export default function ReportsPage() {
@@ -42,13 +34,6 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [reportData, setReportData] = useState<any>(null);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    collections: true, disbursements: true, expenses: true,
-  });
-
-  const toggleSection = (key: string) =>
-    setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
-
   const [dateRange, setDateRange] = useState({
     fromDate: new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
     toDate: new Date().toISOString().split('T')[0],
@@ -76,9 +61,6 @@ export default function ReportsPage() {
           break;
         case 'overdue-analysis':
           data = await apiClient.getOverdueAnalysisReport();
-          break;
-        case 'day-book':
-          data = await apiClient.getDayBookReport(fromDate, toDate);
           break;
         default:
           throw new Error('Unknown report type');
@@ -110,7 +92,7 @@ export default function ReportsPage() {
         )}
 
         {/* Report Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {REPORTS.map(report => {
             const c = colorMap[report.color];
             const isActive = activeReport === report.id;
@@ -319,189 +301,6 @@ export default function ReportsPage() {
                 </div>
               )}
 
-              {/* Day Book */}
-              {activeReport === 'day-book' && (
-                <div className="space-y-6">
-                  {/* Summary Cards */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <StatCard icon={ArrowDownLeft} label="Total Collections" value={`₹${Number(reportData.summary.totalCollections).toLocaleString('en-IN')}`} color="emerald" />
-                    <StatCard icon={ArrowUpRight} label="Total Disbursements" value={`₹${Number(reportData.summary.totalDisbursements).toLocaleString('en-IN')}`} color="violet" />
-                    <StatCard icon={Receipt} label="Total Expenses" value={`₹${Number(reportData.summary.totalExpenses).toLocaleString('en-IN')}`} color="red" />
-                    <StatCard icon={IndianRupee} label="Net Cash Flow" value={`₹${Number(reportData.summary.netCashFlow).toLocaleString('en-IN')}`} color={reportData.summary.netCashFlow >= 0 ? 'emerald' : 'red'} />
-                  </div>
-
-                  {/* Counts */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="text-center bg-emerald-50 rounded-xl p-3 border border-emerald-100">
-                      <p className="text-2xl font-bold text-emerald-700">{reportData.summary.collectionsCount}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Collections</p>
-                    </div>
-                    <div className="text-center bg-violet-50 rounded-xl p-3 border border-violet-100">
-                      <p className="text-2xl font-bold text-violet-700">{reportData.summary.disbursementsCount}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Disbursements</p>
-                    </div>
-                    <div className="text-center bg-red-50 rounded-xl p-3 border border-red-100">
-                      <p className="text-2xl font-bold text-red-700">{reportData.summary.expensesCount}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Expenses</p>
-                    </div>
-                  </div>
-
-                  {/* Collections by Method */}
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Collections by Method</h3>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="flex items-center gap-3 bg-amber-50 rounded-xl p-3">
-                        <Banknote className="w-5 h-5 text-amber-600" />
-                        <div>
-                          <p className="text-xs text-gray-500">Cash ({reportData.summary.collectionsByMethod.cash.count})</p>
-                          <p className="font-bold text-gray-900">₹{Number(reportData.summary.collectionsByMethod.cash.amount).toLocaleString('en-IN')}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 bg-blue-50 rounded-xl p-3">
-                        <Smartphone className="w-5 h-5 text-blue-600" />
-                        <div>
-                          <p className="text-xs text-gray-500">UPI ({reportData.summary.collectionsByMethod.upi.count})</p>
-                          <p className="font-bold text-gray-900">₹{Number(reportData.summary.collectionsByMethod.upi.amount).toLocaleString('en-IN')}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
-                        <Building2 className="w-5 h-5 text-gray-600" />
-                        <div>
-                          <p className="text-xs text-gray-500">Bank ({reportData.summary.collectionsByMethod.bank_transfer.count})</p>
-                          <p className="font-bold text-gray-900">₹{Number(reportData.summary.collectionsByMethod.bank_transfer.amount).toLocaleString('en-IN')}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Collections Detail */}
-                  <div className="border border-gray-100 rounded-xl overflow-hidden">
-                    <button onClick={() => toggleSection('collections')} className="w-full flex items-center justify-between px-4 py-3 bg-emerald-50 hover:bg-emerald-100 transition-colors">
-                      <div className="flex items-center gap-2">
-                        <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
-                        <span className="text-sm font-semibold text-gray-900">Collections</span>
-                        <span className="text-xs bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full">{reportData.collections.length}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-emerald-700">₹{Number(reportData.summary.totalCollections).toLocaleString('en-IN')}</span>
-                        {expandedSections.collections ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-                      </div>
-                    </button>
-                    {expandedSections.collections && reportData.collections.length > 0 && (
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b border-gray-100">
-                              <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500">Date</th>
-                              <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500">Customer</th>
-                              <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500">Loan</th>
-                              <th className="text-right py-2.5 px-4 text-xs font-semibold text-gray-500">Amount</th>
-                              <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500">Method</th>
-                              <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500">Collector</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {reportData.collections.map((c: any) => (
-                              <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50">
-                                <td className="py-2 px-4 text-sm text-gray-600">{new Date(c.paymentDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
-                                <td className="py-2 px-4 text-sm font-medium text-gray-900">{c.customerName}</td>
-                                <td className="py-2 px-4 text-xs text-gray-500 font-mono">{c.loanCode}</td>
-                                <td className="py-2 px-4 text-sm font-semibold text-emerald-600 text-right">₹{Number(c.amountReceived).toLocaleString('en-IN')}</td>
-                                <td className="py-2 px-4 text-xs text-gray-500 capitalize">{c.paymentMethod?.replace('_', ' ')}</td>
-                                <td className="py-2 px-4 text-sm text-gray-600">{c.collectorName || '—'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Disbursements Detail */}
-                  <div className="border border-gray-100 rounded-xl overflow-hidden">
-                    <button onClick={() => toggleSection('disbursements')} className="w-full flex items-center justify-between px-4 py-3 bg-violet-50 hover:bg-violet-100 transition-colors">
-                      <div className="flex items-center gap-2">
-                        <ArrowUpRight className="w-4 h-4 text-violet-600" />
-                        <span className="text-sm font-semibold text-gray-900">Disbursements</span>
-                        <span className="text-xs bg-violet-200 text-violet-800 px-2 py-0.5 rounded-full">{reportData.disbursements.length}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-violet-700">₹{Number(reportData.summary.totalDisbursements).toLocaleString('en-IN')}</span>
-                        {expandedSections.disbursements ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-                      </div>
-                    </button>
-                    {expandedSections.disbursements && reportData.disbursements.length > 0 && (
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b border-gray-100">
-                              <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500">Date</th>
-                              <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500">Customer</th>
-                              <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500">Loan</th>
-                              <th className="text-right py-2.5 px-4 text-xs font-semibold text-gray-500">Disbursed</th>
-                              <th className="text-right py-2.5 px-4 text-xs font-semibold text-gray-500">Held</th>
-                              <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500">Method</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {reportData.disbursements.map((d: any) => (
-                              <tr key={d.id} className="border-b border-gray-50 hover:bg-gray-50">
-                                <td className="py-2 px-4 text-sm text-gray-600">{new Date(d.disbursementDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
-                                <td className="py-2 px-4 text-sm font-medium text-gray-900">{d.customerName}</td>
-                                <td className="py-2 px-4 text-xs text-gray-500 font-mono">{d.loanCode}</td>
-                                <td className="py-2 px-4 text-sm font-semibold text-violet-600 text-right">₹{Number(d.disbursedAmount).toLocaleString('en-IN')}</td>
-                                <td className="py-2 px-4 text-sm text-gray-500 text-right">₹{Number(d.heldAmount).toLocaleString('en-IN')}</td>
-                                <td className="py-2 px-4 text-xs text-gray-500 capitalize">{d.disbursementMethod?.replace('_', ' ')}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Expenses Detail */}
-                  <div className="border border-gray-100 rounded-xl overflow-hidden">
-                    <button onClick={() => toggleSection('expenses')} className="w-full flex items-center justify-between px-4 py-3 bg-red-50 hover:bg-red-100 transition-colors">
-                      <div className="flex items-center gap-2">
-                        <Receipt className="w-4 h-4 text-red-600" />
-                        <span className="text-sm font-semibold text-gray-900">Expenses</span>
-                        <span className="text-xs bg-red-200 text-red-800 px-2 py-0.5 rounded-full">{reportData.expenses.length}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-red-700">₹{Number(reportData.summary.totalExpenses).toLocaleString('en-IN')}</span>
-                        {expandedSections.expenses ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-                      </div>
-                    </button>
-                    {expandedSections.expenses && reportData.expenses.length > 0 && (
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b border-gray-100">
-                              <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500">Date</th>
-                              <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500">Category</th>
-                              <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500">Description</th>
-                              <th className="text-right py-2.5 px-4 text-xs font-semibold text-gray-500">Amount</th>
-                              <th className="text-left py-2.5 px-4 text-xs font-semibold text-gray-500">Created By</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {reportData.expenses.map((e: any) => (
-                              <tr key={e.id} className="border-b border-gray-50 hover:bg-gray-50">
-                                <td className="py-2 px-4 text-sm text-gray-600">{new Date(e.expenseDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
-                                <td className="py-2 px-4 text-xs text-gray-700 capitalize">{e.category?.replace('_', ' ')}</td>
-                                <td className="py-2 px-4 text-sm text-gray-600 max-w-[200px] truncate">{e.description}</td>
-                                <td className="py-2 px-4 text-sm font-semibold text-red-600 text-right">₹{Number(e.amount).toLocaleString('en-IN')}</td>
-                                <td className="py-2 px-4 text-sm text-gray-600">{e.createdBy || '—'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
